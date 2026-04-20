@@ -23,6 +23,18 @@ Production build:
 npm run build
 ```
 
+## GitHub Pages
+
+This app must be deployed from the Vite production build output, not from the raw repository source.
+
+For GitHub Pages:
+
+1. Push the repo with `.github/workflows/deploy.yml`
+2. In repository Settings -> Pages, set **Source** to **GitHub Actions**
+3. Let the workflow build and deploy `dist`
+
+If Pages is left on `Deploy from a branch` with `main`, GitHub serves the source `index.html`, which references `/src/main.jsx`, and the site fails with the `text/jsx` MIME-type error / blank screen.
+
 ## Project structure
 
 - `src/data/toolRegistry.js`: single source of truth for tool metadata and component mapping
