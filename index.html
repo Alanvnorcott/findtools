@@ -18,6 +18,20 @@
     <meta property="og:description" content="Browser-based tools for text, files, calculations, conversion, and everyday work." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://findtools.net/" />
+    <script>
+      (function (l) {
+        if (l.search[1] === "/") {
+          var decoded = l.search
+            .slice(1)
+            .split("&")
+            .map(function (segment) {
+              return segment.replace(/~and~/g, "&");
+            })
+            .join("?");
+          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      })(window.location);
+    </script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
