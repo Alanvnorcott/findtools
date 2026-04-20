@@ -38,12 +38,13 @@ export default function App() {
               description="Findtools is designed to keep tool processing in the browser whenever possible."
             >
               <p>
-                Tool input is processed locally in your browser for the supported utilities on this site. Pinned tools
-                and recent tools may be stored in local browser storage on your device to improve your experience.
+                Tool input is processed locally in your browser for the supported utilities on this site. Findtools does
+                not upload, store, share, or retain the text, files, or values you use in those browser-only tools.
               </p>
               <p>
-                Findtools does not require account creation, authentication, or server-side processing for the core
-                tool functionality implemented in this app.
+                Pinned tools and recent tools may be stored in local browser storage on your own device to improve your
+                experience. Findtools does not require account creation, authentication, or server-side processing for
+                the core tool functionality implemented in this app.
               </p>
             </StaticPage>
           }

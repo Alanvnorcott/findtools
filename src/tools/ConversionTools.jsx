@@ -173,3 +173,39 @@ export function HoursToMinutesTool({ tool, ...shellProps }) {
   const output = useMemo(() => `${(Number(value) * 60).toFixed(2)} minutes`, [value]);
   return baseTool(tool, shellProps, "Convert decimal hours to minutes.", <ToolInput label="Hours"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
 }
+
+export function GallonsToLitersTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("5");
+  const output = useMemo(() => `${(Number(value) * 3.78541).toFixed(3)} L`, [value]);
+  return baseTool(tool, shellProps, "Convert US gallons to liters.", <ToolInput label="Gallons"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function LitersToGallonsTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("18.9");
+  const output = useMemo(() => `${(Number(value) / 3.78541).toFixed(3)} gal`, [value]);
+  return baseTool(tool, shellProps, "Convert liters to US gallons.", <ToolInput label="Liters"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function MphToKphTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("55");
+  const output = useMemo(() => `${(Number(value) * 1.60934).toFixed(3)} km/h`, [value]);
+  return baseTool(tool, shellProps, "Convert miles per hour to kilometers per hour.", <ToolInput label="MPH"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function KphToMphTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("100");
+  const output = useMemo(() => `${(Number(value) / 1.60934).toFixed(3)} mph`, [value]);
+  return baseTool(tool, shellProps, "Convert kilometers per hour to miles per hour.", <ToolInput label="KPH"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function AcresToSquareFeetTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("2");
+  const output = useMemo(() => `${(Number(value) * 43560).toFixed(2)} sq ft`, [value]);
+  return baseTool(tool, shellProps, "Convert acres to square feet.", <ToolInput label="Acres"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function SquareFeetToAcresTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("87120");
+  const output = useMemo(() => `${(Number(value) / 43560).toFixed(4)} acres`, [value]);
+  return baseTool(tool, shellProps, "Convert square feet to acres.", <ToolInput label="Square feet"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}

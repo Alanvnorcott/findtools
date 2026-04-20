@@ -1447,3 +1447,225 @@ export function OpportunityCostCalculatorTool({ tool, ...shellProps }) {
   const result = useMemo(() => calcResult(`Opportunity cost of choosing A: ${currency(Math.max(0, toNumber(optionB) - toNumber(optionA)))}`, [{ label: "Option A value", value: currency(toNumber(optionA)) }, { label: "Option B value", value: currency(toNumber(optionB)) }]), [optionA, optionB]);
   return <CalculatorTool {...shellProps} tool={tool} instructions="Compare two options and calculate the value given up by choosing one over the other." fields={pair(<ToolInput key="a" label="Option A value"><input value={optionA} onChange={(e) => setOptionA(e.target.value)} /></ToolInput>, <ToolInput key="b" label="Option B value"><input value={optionB} onChange={(e) => setOptionB(e.target.value)} /></ToolInput>)} result={result} reset={() => { setOptionA("8500"); setOptionB("11200"); }} />;
 }
+
+function monthlyPayment(principal, annualRate, months) {
+  const n = Math.max(1, months);
+  const r = annualRate / 100 / 12;
+  if (r === 0) return principal / n;
+  return principal * ((r * (1 + r) ** n) / ((1 + r) ** n - 1));
+}
+
+function gcd(a, b) {
+  let x = Math.abs(Math.round(a));
+  let y = Math.abs(Math.round(b));
+  while (y) {
+    const temp = y;
+    y = x % y;
+    x = temp;
+  }
+  return x || 1;
+}
+
+function parseWeightedLines(value) {
+  return value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
+    const [criterion, weight, scoreA, scoreB] = line.split("|").map((item) => item.trim());
+    return {
+      criterion,
+      weight: toNumber(weight) || 1,
+      scoreA: toNumber(scoreA),
+      scoreB: toNumber(scoreB)
+    };
+  });
+}
+
+function parseScoredList(value) {
+  return value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
+    const [label, score] = line.split("|").map((item) => item.trim());
+    return { label, score: toNumber(score) || 1 };
+  });
+}
+
+export function AspectRatioCalculatorTool({ tool, ...shellProps }) {
+  const [width, setWidth] = useState("1920");
+  const [height, setHeight] = useState("1080");
+  const [targetWidth, setTargetWidth] = useState("1200");
+  const [targetHeight, setTargetHeight] = useState("");
+  const result = useMemo(() => {
+    const w = Math.max(1, toNumber(width));
+    const h = Math.max(1, toNumber(height));
+    const divisor = gcd(w, h);
+    const nextHeight = targetWidth ? (toNumber(targetWidth) * h) / w : 0;
+    const nextWidth = targetHeight ? (toNumber(targetHeight) * w) / h : 0;
+    return calcResult(`Aspect ratio: ${w / divisor}:${h / divisor}`, [
+      { label: "Original size", value: `${w} × ${h}` },
+      { label: "Simplified ratio", value: `${w / divisor}:${h / divisor}` },
+      { label: "Height at target width", value: targetWidth ? `${number(nextHeight, 0)} px` : "-" },
+      { label: "Width at target height", value: targetHeight ? `${number(nextWidth, 0)} px` : "-" }
+    ]);
+  }, [height, targetHeight, targetWidth, width]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Simplify an aspect ratio and calculate matching dimensions." fields={<><div className="split-fields"><ToolInput label="Width"><input value={width} onChange={(e) => setWidth(e.target.value)} /></ToolInput><ToolInput label="Height"><input value={height} onChange={(e) => setHeight(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="Target width"><input value={targetWidth} onChange={(e) => setTargetWidth(e.target.value)} /></ToolInput><ToolInput label="Target height"><input value={targetHeight} onChange={(e) => setTargetHeight(e.target.value)} /></ToolInput></div></>} result={result} reset={() => { setWidth("1920"); setHeight("1080"); setTargetWidth("1200"); setTargetHeight(""); }} />;
+}
+
+export function WeightedDecisionMatrixTool({ tool, ...shellProps }) {
+  const [optionA, setOptionA] = useState("Option A");
+  const [optionB, setOptionB] = useState("Option B");
+  const [matrix, setMatrix] = useState("Price|5|8|6\nSpeed|4|7|9\nRisk|3|9|6");
+  const rows = useMemo(() => parseWeightedLines(matrix), [matrix]);
+  const totals = useMemo(() => rows.reduce((acc, row) => ({
+    a: acc.a + row.weight * row.scoreA,
+    b: acc.b + row.weight * row.scoreB
+  }), { a: 0, b: 0 }), [rows]);
+  const winner = totals.a === totals.b ? "Tie" : totals.a > totals.b ? optionA : optionB;
+  tool.copyValue = () => `${optionA}: ${totals.a}\n${optionB}: ${totals.b}\nWinner: ${winner}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Score two options with weighted criteria using lines like Criterion|Weight|Score A|Score B." inputArea={<><div className="split-fields"><ToolInput label="Option A name"><input value={optionA} onChange={(e) => setOptionA(e.target.value)} /></ToolInput><ToolInput label="Option B name"><input value={optionB} onChange={(e) => setOptionB(e.target.value)} /></ToolInput></div><ToolInput label="Criteria matrix"><textarea rows="10" value={matrix} onChange={(e) => setMatrix(e.target.value)} /></ToolInput><ActionRow><button className="button button--secondary" onClick={() => { setOptionA("Option A"); setOptionB("Option B"); setMatrix("Price|5|8|6\nSpeed|4|7|9\nRisk|3|9|6"); }} type="button">Reset</button></ActionRow></>} outputArea={<div className="stack-sm"><ResultPanel value={`Winner: ${winner}`} /><ResultPanel title="Score totals"><KeyValueList items={[{ label: optionA, value: number(totals.a) }, { label: optionB, value: number(totals.b) }]} /></ResultPanel></div>} />;
+}
+
+export function ProsAndConsScorerTool({ tool, ...shellProps }) {
+  const [pros, setPros] = useState("Higher pay|4\nRemote flexibility|3\nBetter team|2");
+  const [cons, setCons] = useState("Longer commute|3\nLess PTO|2");
+  const proItems = useMemo(() => parseScoredList(pros), [pros]);
+  const conItems = useMemo(() => parseScoredList(cons), [cons]);
+  const proTotal = proItems.reduce((sum, item) => sum + item.score, 0);
+  const conTotal = conItems.reduce((sum, item) => sum + item.score, 0);
+  const net = proTotal - conTotal;
+  tool.copyValue = () => `Pros: ${proTotal}\nCons: ${conTotal}\nNet: ${net}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Score pros and cons with lines like Item|Weight to get a simple net decision score." inputArea={<><ToolInput label="Pros"><textarea rows="8" value={pros} onChange={(e) => setPros(e.target.value)} /></ToolInput><ToolInput label="Cons"><textarea rows="8" value={cons} onChange={(e) => setCons(e.target.value)} /></ToolInput><ActionRow><button className="button button--secondary" onClick={() => { setPros("Higher pay|4\nRemote flexibility|3\nBetter team|2"); setCons("Longer commute|3\nLess PTO|2"); }} type="button">Reset</button></ActionRow></>} outputArea={<ResultPanel title="Decision score"><KeyValueList items={[{ label: "Pros total", value: String(proTotal) }, { label: "Cons total", value: String(conTotal) }, { label: "Net score", value: String(net) }]} /></ResultPanel>} />;
+}
+
+export function BuyVsRentCalculatorTool({ tool, ...shellProps }) {
+  const [rent, setRent] = useState("2200");
+  const [homePrice, setHomePrice] = useState("420000");
+  const [downPayment, setDownPayment] = useState("60000");
+  const [rate, setRate] = useState("6.5");
+  const [termYears, setTermYears] = useState("30");
+  const [monthlyOwnershipCosts, setMonthlyOwnershipCosts] = useState("650");
+  const result = useMemo(() => {
+    const principal = Math.max(0, toNumber(homePrice) - toNumber(downPayment));
+    const payment = monthlyPayment(principal, toNumber(rate), toNumber(termYears) * 12);
+    const buyMonthly = payment + toNumber(monthlyOwnershipCosts);
+    const rentMonthly = toNumber(rent);
+    return calcResult(buyMonthly < rentMonthly ? "Buying is lower on monthly cost." : "Renting is lower on monthly cost.", [
+      { label: "Estimated buy monthly", value: currency(buyMonthly) },
+      { label: "Monthly rent", value: currency(rentMonthly) },
+      { label: "Mortgage payment", value: currency(payment) },
+      { label: "Other ownership costs", value: currency(toNumber(monthlyOwnershipCosts)) }
+    ]);
+  }, [downPayment, homePrice, monthlyOwnershipCosts, rate, rent, termYears]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Compare estimated monthly buying cost against current monthly rent." fields={<><div className="split-fields"><ToolInput label="Monthly rent"><input value={rent} onChange={(e) => setRent(e.target.value)} /></ToolInput><ToolInput label="Home price"><input value={homePrice} onChange={(e) => setHomePrice(e.target.value)} /></ToolInput><ToolInput label="Down payment"><input value={downPayment} onChange={(e) => setDownPayment(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="Rate %"><input value={rate} onChange={(e) => setRate(e.target.value)} /></ToolInput><ToolInput label="Term years"><input value={termYears} onChange={(e) => setTermYears(e.target.value)} /></ToolInput><ToolInput label="Other monthly costs"><input value={monthlyOwnershipCosts} onChange={(e) => setMonthlyOwnershipCosts(e.target.value)} /></ToolInput></div></>} result={result} reset={() => { setRent("2200"); setHomePrice("420000"); setDownPayment("60000"); setRate("6.5"); setTermYears("30"); setMonthlyOwnershipCosts("650"); }} />;
+}
+
+export function LeaseVsBuyCalculatorTool({ tool, ...shellProps }) {
+  const [leaseMonthly, setLeaseMonthly] = useState("520");
+  const [leaseMonths, setLeaseMonths] = useState("36");
+  const [leaseFees, setLeaseFees] = useState("2500");
+  const [buyPrice, setBuyPrice] = useState("32000");
+  const [downPayment, setDownPayment] = useState("4000");
+  const [rate, setRate] = useState("6");
+  const [buyMaintenance, setBuyMaintenance] = useState("90");
+  const result = useMemo(() => {
+    const months = Math.max(1, toNumber(leaseMonths));
+    const leaseTotal = toNumber(leaseMonthly) * months + toNumber(leaseFees);
+    const principal = Math.max(0, toNumber(buyPrice) - toNumber(downPayment));
+    const buyLoanPayment = monthlyPayment(principal, toNumber(rate), months);
+    const buyTotal = toNumber(downPayment) + buyLoanPayment * months + toNumber(buyMaintenance) * months;
+    return calcResult(leaseTotal < buyTotal ? "Leasing is lower over the comparison period." : "Buying is lower over the comparison period.", [
+      { label: "Lease total", value: currency(leaseTotal) },
+      { label: "Buy total", value: currency(buyTotal) },
+      { label: "Buy loan payment", value: currency(buyLoanPayment) },
+      { label: "Comparison months", value: String(months) }
+    ]);
+  }, [buyMaintenance, buyPrice, downPayment, leaseFees, leaseMonthly, leaseMonths, rate]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Compare lease and buy costs over the same decision horizon." fields={<><div className="split-fields"><ToolInput label="Lease monthly"><input value={leaseMonthly} onChange={(e) => setLeaseMonthly(e.target.value)} /></ToolInput><ToolInput label="Lease months"><input value={leaseMonths} onChange={(e) => setLeaseMonths(e.target.value)} /></ToolInput><ToolInput label="Lease fees"><input value={leaseFees} onChange={(e) => setLeaseFees(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="Buy price"><input value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} /></ToolInput><ToolInput label="Down payment"><input value={downPayment} onChange={(e) => setDownPayment(e.target.value)} /></ToolInput><ToolInput label="Rate %"><input value={rate} onChange={(e) => setRate(e.target.value)} /></ToolInput><ToolInput label="Monthly maintenance"><input value={buyMaintenance} onChange={(e) => setBuyMaintenance(e.target.value)} /></ToolInput></div></>} result={result} reset={() => { setLeaseMonthly("520"); setLeaseMonths("36"); setLeaseFees("2500"); setBuyPrice("32000"); setDownPayment("4000"); setRate("6"); setBuyMaintenance("90"); }} />;
+}
+
+export function JobOfferComparisonTool({ tool, ...shellProps }) {
+  const [salaryA, setSalaryA] = useState("98000");
+  const [bonusA, setBonusA] = useState("6000");
+  const [benefitsA, setBenefitsA] = useState("4500");
+  const [commuteA, setCommuteA] = useState("200");
+  const [salaryB, setSalaryB] = useState("93000");
+  const [bonusB, setBonusB] = useState("10000");
+  const [benefitsB, setBenefitsB] = useState("3500");
+  const [commuteB, setCommuteB] = useState("40");
+  const adjustedA = toNumber(salaryA) + toNumber(bonusA) + toNumber(benefitsA) - toNumber(commuteA) * 12;
+  const adjustedB = toNumber(salaryB) + toNumber(bonusB) + toNumber(benefitsB) - toNumber(commuteB) * 12;
+  tool.copyValue = () => `Offer A: ${currency(adjustedA)}\nOffer B: ${currency(adjustedB)}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Compare two job offers using salary, bonus, benefits, and monthly commute cost." inputArea={<><div className="split-fields"><ToolInput label="Offer A salary"><input value={salaryA} onChange={(e) => setSalaryA(e.target.value)} /></ToolInput><ToolInput label="Offer A bonus"><input value={bonusA} onChange={(e) => setBonusA(e.target.value)} /></ToolInput><ToolInput label="Offer A benefits"><input value={benefitsA} onChange={(e) => setBenefitsA(e.target.value)} /></ToolInput><ToolInput label="Offer A commute / month"><input value={commuteA} onChange={(e) => setCommuteA(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="Offer B salary"><input value={salaryB} onChange={(e) => setSalaryB(e.target.value)} /></ToolInput><ToolInput label="Offer B bonus"><input value={bonusB} onChange={(e) => setBonusB(e.target.value)} /></ToolInput><ToolInput label="Offer B benefits"><input value={benefitsB} onChange={(e) => setBenefitsB(e.target.value)} /></ToolInput><ToolInput label="Offer B commute / month"><input value={commuteB} onChange={(e) => setCommuteB(e.target.value)} /></ToolInput></div><ActionRow><button className="button button--secondary" onClick={() => { setSalaryA("98000"); setBonusA("6000"); setBenefitsA("4500"); setCommuteA("200"); setSalaryB("93000"); setBonusB("10000"); setBenefitsB("3500"); setCommuteB("40"); }} type="button">Reset</button></ActionRow></>} outputArea={<ResultPanel title="Adjusted annual value"><KeyValueList items={[{ label: "Offer A", value: currency(adjustedA) }, { label: "Offer B", value: currency(adjustedB) }, { label: "Higher value", value: adjustedA === adjustedB ? "Tie" : adjustedA > adjustedB ? "Offer A" : "Offer B" }]} /></ResultPanel>} />;
+}
+
+export function ApartmentComparisonTool({ tool, ...shellProps }) {
+  const [rentA, setRentA] = useState("1850");
+  const [utilitiesA, setUtilitiesA] = useState("140");
+  const [sqftA, setSqftA] = useState("820");
+  const [commuteA, setCommuteA] = useState("18");
+  const [rentB, setRentB] = useState("2050");
+  const [utilitiesB, setUtilitiesB] = useState("110");
+  const [sqftB, setSqftB] = useState("980");
+  const [commuteB, setCommuteB] = useState("30");
+  const totalA = toNumber(rentA) + toNumber(utilitiesA);
+  const totalB = toNumber(rentB) + toNumber(utilitiesB);
+  tool.copyValue = () => `Apartment A total: ${currency(totalA)}\nApartment B total: ${currency(totalB)}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Compare apartments by monthly cost, size, and commute time." inputArea={<><div className="split-fields"><ToolInput label="A rent"><input value={rentA} onChange={(e) => setRentA(e.target.value)} /></ToolInput><ToolInput label="A utilities"><input value={utilitiesA} onChange={(e) => setUtilitiesA(e.target.value)} /></ToolInput><ToolInput label="A sqft"><input value={sqftA} onChange={(e) => setSqftA(e.target.value)} /></ToolInput><ToolInput label="A commute minutes"><input value={commuteA} onChange={(e) => setCommuteA(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="B rent"><input value={rentB} onChange={(e) => setRentB(e.target.value)} /></ToolInput><ToolInput label="B utilities"><input value={utilitiesB} onChange={(e) => setUtilitiesB(e.target.value)} /></ToolInput><ToolInput label="B sqft"><input value={sqftB} onChange={(e) => setSqftB(e.target.value)} /></ToolInput><ToolInput label="B commute minutes"><input value={commuteB} onChange={(e) => setCommuteB(e.target.value)} /></ToolInput></div><ActionRow><button className="button button--secondary" onClick={() => { setRentA("1850"); setUtilitiesA("140"); setSqftA("820"); setCommuteA("18"); setRentB("2050"); setUtilitiesB("110"); setSqftB("980"); setCommuteB("30"); }} type="button">Reset</button></ActionRow></>} outputArea={<ResultPanel title="Apartment comparison"><KeyValueList items={[{ label: "Apartment A monthly total", value: currency(totalA) }, { label: "Apartment A cost / sqft", value: currency(totalA / Math.max(1, toNumber(sqftA))) }, { label: "Apartment B monthly total", value: currency(totalB) }, { label: "Apartment B cost / sqft", value: currency(totalB / Math.max(1, toNumber(sqftB))) }, { label: "Lower monthly cost", value: totalA === totalB ? "Tie" : totalA < totalB ? "Apartment A" : "Apartment B" }]} /></ResultPanel>} />;
+}
+
+export function TravelOptionComparisonTool({ tool, ...shellProps }) {
+  const [costA, setCostA] = useState("260");
+  const [hoursA, setHoursA] = useState("5.5");
+  const [stopsA, setStopsA] = useState("0");
+  const [costB, setCostB] = useState("180");
+  const [hoursB, setHoursB] = useState("8");
+  const [stopsB, setStopsB] = useState("1");
+  const [timeValue, setTimeValue] = useState("30");
+  const weightedA = toNumber(costA) + toNumber(hoursA) * toNumber(timeValue) + toNumber(stopsA) * 40;
+  const weightedB = toNumber(costB) + toNumber(hoursB) * toNumber(timeValue) + toNumber(stopsB) * 40;
+  tool.copyValue = () => `Option A weighted cost: ${currency(weightedA)}\nOption B weighted cost: ${currency(weightedB)}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Compare travel options using direct cost, time value, and stop penalty." inputArea={<><ToolInput label="Value of time per hour"><input value={timeValue} onChange={(e) => setTimeValue(e.target.value)} /></ToolInput><div className="split-fields"><ToolInput label="Option A cost"><input value={costA} onChange={(e) => setCostA(e.target.value)} /></ToolInput><ToolInput label="Option A hours"><input value={hoursA} onChange={(e) => setHoursA(e.target.value)} /></ToolInput><ToolInput label="Option A stops"><input value={stopsA} onChange={(e) => setStopsA(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="Option B cost"><input value={costB} onChange={(e) => setCostB(e.target.value)} /></ToolInput><ToolInput label="Option B hours"><input value={hoursB} onChange={(e) => setHoursB(e.target.value)} /></ToolInput><ToolInput label="Option B stops"><input value={stopsB} onChange={(e) => setStopsB(e.target.value)} /></ToolInput></div><ActionRow><button className="button button--secondary" onClick={() => { setCostA("260"); setHoursA("5.5"); setStopsA("0"); setCostB("180"); setHoursB("8"); setStopsB("1"); setTimeValue("30"); }} type="button">Reset</button></ActionRow></>} outputArea={<ResultPanel title="Weighted travel comparison"><KeyValueList items={[{ label: "Option A weighted cost", value: currency(weightedA) }, { label: "Option B weighted cost", value: currency(weightedB) }, { label: "Better option", value: weightedA === weightedB ? "Tie" : weightedA < weightedB ? "Option A" : "Option B" }]} /></ResultPanel>} />;
+}
+
+export function RefinanceCalculatorTool({ tool, ...shellProps }) {
+  const [balance, setBalance] = useState("285000");
+  const [currentRate, setCurrentRate] = useState("7.1");
+  const [newRate, setNewRate] = useState("6.2");
+  const [yearsRemaining, setYearsRemaining] = useState("26");
+  const [closingCosts, setClosingCosts] = useState("4200");
+  const result = useMemo(() => {
+    const months = Math.max(1, toNumber(yearsRemaining) * 12);
+    const currentPayment = monthlyPayment(toNumber(balance), toNumber(currentRate), months);
+    const newPayment = monthlyPayment(toNumber(balance), toNumber(newRate), months);
+    const monthlySavings = currentPayment - newPayment;
+    const breakEvenMonths = monthlySavings > 0 ? toNumber(closingCosts) / monthlySavings : 0;
+    return calcResult(`Estimated monthly savings: ${currency(monthlySavings)}`, [
+      { label: "Current payment", value: currency(currentPayment) },
+      { label: "New payment", value: currency(newPayment) },
+      { label: "Closing costs", value: currency(toNumber(closingCosts)) },
+      { label: "Break-even months", value: number(breakEvenMonths, 1) }
+    ]);
+  }, [balance, closingCosts, currentRate, newRate, yearsRemaining]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Estimate refinance savings and break-even timing from a new rate." fields={<><div className="split-fields"><ToolInput label="Loan balance"><input value={balance} onChange={(e) => setBalance(e.target.value)} /></ToolInput><ToolInput label="Current rate %"><input value={currentRate} onChange={(e) => setCurrentRate(e.target.value)} /></ToolInput><ToolInput label="New rate %"><input value={newRate} onChange={(e) => setNewRate(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="Years remaining"><input value={yearsRemaining} onChange={(e) => setYearsRemaining(e.target.value)} /></ToolInput><ToolInput label="Closing costs"><input value={closingCosts} onChange={(e) => setClosingCosts(e.target.value)} /></ToolInput></div></>} result={result} reset={() => { setBalance("285000"); setCurrentRate("7.1"); setNewRate("6.2"); setYearsRemaining("26"); setClosingCosts("4200"); }} />;
+}
+
+export function DebtToIncomeCalculatorTool({ tool, ...shellProps }) {
+  const [monthlyDebt, setMonthlyDebt] = useState("1650");
+  const [grossIncome, setGrossIncome] = useState("6200");
+  const result = useMemo(() => {
+    const ratio = grossIncome ? (toNumber(monthlyDebt) / Math.max(1, toNumber(grossIncome))) * 100 : 0;
+    return calcResult(`Debt-to-income ratio: ${percent(ratio)}`, [
+      { label: "Monthly debt", value: currency(toNumber(monthlyDebt)) },
+      { label: "Gross monthly income", value: currency(toNumber(grossIncome)) },
+      { label: "DTI", value: percent(ratio) }
+    ]);
+  }, [grossIncome, monthlyDebt]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Calculate debt-to-income ratio from monthly debt payments and gross income." fields={pair(<ToolInput key="debt" label="Monthly debt payments"><input value={monthlyDebt} onChange={(e) => setMonthlyDebt(e.target.value)} /></ToolInput>, <ToolInput key="income" label="Gross monthly income"><input value={grossIncome} onChange={(e) => setGrossIncome(e.target.value)} /></ToolInput>)} result={result} reset={() => { setMonthlyDebt("1650"); setGrossIncome("6200"); }} />;
+}
+
+export function RuleOf72CalculatorTool({ tool, ...shellProps }) {
+  const [rate, setRate] = useState("8");
+  const result = useMemo(() => {
+    const years = toNumber(rate) ? 72 / toNumber(rate) : 0;
+    return calcResult(`Estimated doubling time: ${number(years, 1)} years`, [
+      { label: "Rate", value: percent(toNumber(rate)) },
+      { label: "Formula", value: "72 / rate" }
+    ]);
+  }, [rate]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Estimate how many years it takes for money to double using the Rule of 72." fields={<ToolInput label="Annual rate %"><input value={rate} onChange={(e) => setRate(e.target.value)} /></ToolInput>} result={result} reset={() => setRate("8")} />;
+}

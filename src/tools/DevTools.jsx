@@ -560,3 +560,35 @@ export function SemanticVersionBumpTool({ tool, ...shellProps }) {
   tool.copyValue = () => items.map((item) => `${item.label}: ${item.value}`).join("\n");
   return <ToolShell {...shellProps} tool={tool} instructions="Calculate semantic version bumps from a current x.y.z version." inputArea={<ToolInput label="Current version"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
 }
+
+export function BasicAuthHeaderGeneratorTool({ tool, ...shellProps }) {
+  const [username, setUsername] = useState("demo");
+  const [password, setPassword] = useState("secret");
+  const output = useMemo(() => `Authorization: Basic ${btoa(`${username}:${password}`)}`, [password, username]);
+  return miniTool(tool, shellProps, "Generate a Basic Authorization header from a username and password.", <><div className="split-fields"><ToolInput label="Username"><input value={username} onChange={(e) => setUsername(e.target.value)} /></ToolInput><ToolInput label="Password"><input value={password} onChange={(e) => setPassword(e.target.value)} /></ToolInput></div><ActionRow><button className="button button--secondary" onClick={() => { setUsername("demo"); setPassword("secret"); }} type="button">Reset</button></ActionRow></>, output);
+}
+
+export function JwtExpiryCheckerTool({ tool, ...shellProps }) {
+  const [token, setToken] = useState("eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE5MDAwMDAwMDAsInN1YiI6ImRlbW8ifQ.signature");
+  const items = useMemo(() => {
+    try {
+      const [, payload] = token.split(".");
+      const parsed = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+      const exp = Number(parsed.exp);
+      const date = Number.isFinite(exp) ? new Date(exp * 1000) : null;
+      return [
+        { label: "Has exp claim", value: Number.isFinite(exp) ? "Yes" : "No" },
+        { label: "Expiry", value: date ? date.toLocaleString() : "-" },
+        { label: "Status", value: date ? (date.getTime() > Date.now() ? "Not expired" : "Expired") : "Unknown" }
+      ];
+    } catch {
+      return [
+        { label: "Has exp claim", value: "No" },
+        { label: "Expiry", value: "-" },
+        { label: "Status", value: "Invalid token" }
+      ];
+    }
+  }, [token]);
+  tool.copyValue = () => items.map((item) => `${item.label}: ${item.value}`).join("\n");
+  return <ToolShell {...shellProps} tool={tool} instructions="Decode a JWT payload and inspect its exp claim locally." inputArea={<><ToolInput label="JWT token"><textarea rows="10" value={token} onChange={(e) => setToken(e.target.value)} /></ToolInput><ActionRow><button className="button button--secondary" onClick={() => setToken("eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE5MDAwMDAwMDAsInN1YiI6ImRlbW8ifQ.signature")} type="button">Reset</button></ActionRow></>} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
+}

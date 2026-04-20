@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { PDFDocument, degrees } from "pdf-lib";
+import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import { ActionRow, KeyValueList, ResultPanel, ToolInput } from "../components/common";
 import { ToolShell } from "../components/ToolShell";
 import { bytesToSize, downloadBlob } from "../lib/utils";
@@ -374,4 +374,57 @@ export function SocialMediaImageCropperTool({ tool, ...shellProps }) {
     setStatus(`Exported ${preset} crop preset.`);
   };
   return <ToolShell {...shellProps} tool={tool} instructions="Export an image to a common social-media aspect preset." inputArea={<><ToolInput label="Preset"><select value={preset} onChange={(e) => setPreset(e.target.value)}><option value="1200x630">Open Graph 1200x630</option><option value="1080x1080">Square 1080x1080</option><option value="1080x1920">Story 1080x1920</option></select></ToolInput><ToolInput label="Image file"><input accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} type="file" /></ToolInput><ActionRow><button className="button" onClick={exportPreset} type="button">Export preset</button></ActionRow></>} outputArea={<ResultPanel value={status} />} />;
+}
+
+export function PdfWatermarkTool({ tool, ...shellProps }) {
+  const [file, setFile] = useState(null);
+  const [text, setText] = useState("Findtools");
+  const [status, setStatus] = useState("Choose a PDF and watermark text.");
+  tool.copyValue = () => status;
+
+  const watermark = async () => {
+    if (!file) return setStatus("Choose a PDF first.");
+    const pdf = await PDFDocument.load(await readFileAsBytes(file));
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    pdf.getPages().forEach((page) => {
+      const { width, height } = page.getSize();
+      page.drawText(text, {
+        x: width * 0.18,
+        y: height * 0.45,
+        size: Math.max(24, Math.min(width, height) / 12),
+        font,
+        color: rgb(0.45, 0.45, 0.45),
+        rotate: degrees(35),
+        opacity: 0.28
+      });
+    });
+    const bytes = await pdf.save();
+    downloadBlob(new Blob([bytes], { type: "application/pdf" }), "watermarked.pdf");
+    setStatus("Added a watermark to each PDF page.");
+  };
+
+  return <ToolShell {...shellProps} tool={tool} instructions="Add a repeated text watermark to every page of a PDF locally." inputArea={<><ToolInput label="PDF file"><input accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} type="file" /></ToolInput><ToolInput label="Watermark text"><input value={text} onChange={(e) => setText(e.target.value)} /></ToolInput><ActionRow><button className="button" onClick={watermark} type="button">Watermark and download</button></ActionRow></>} outputArea={<ResultPanel value={status} />} />;
+}
+
+export function PdfCompressorTool({ tool, ...shellProps }) {
+  const [file, setFile] = useState(null);
+  const [status, setStatus] = useState("Choose a PDF to resave with object stream compression.");
+  const [details, setDetails] = useState([]);
+  tool.copyValue = () => status;
+
+  const compress = async () => {
+    if (!file) return setStatus("Choose a PDF first.");
+    const sourceBytes = await readFileAsBytes(file);
+    const pdf = await PDFDocument.load(sourceBytes);
+    const bytes = await pdf.save({ useObjectStreams: true, updateFieldAppearances: false });
+    downloadBlob(new Blob([bytes], { type: "application/pdf" }), "compressed.pdf");
+    setDetails([
+      { label: "Original size", value: bytesToSize(sourceBytes.byteLength) },
+      { label: "Compressed size", value: bytesToSize(bytes.byteLength) },
+      { label: "Saved", value: bytes.byteLength < sourceBytes.byteLength ? bytesToSize(sourceBytes.byteLength - bytes.byteLength) : "0 B" }
+    ]);
+    setStatus("Resaved PDF with browser-side compression settings.");
+  };
+
+  return <ToolShell {...shellProps} tool={tool} instructions="Reduce PDF size by resaving the file with object stream compression." inputArea={<><ToolInput label="PDF file"><input accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} type="file" /></ToolInput><ActionRow><button className="button" onClick={compress} type="button">Compress and download</button></ActionRow></>} outputArea={<div className="stack-sm"><ResultPanel value={status} />{details.length ? <ResultPanel title="Size breakdown"><KeyValueList items={details} /></ResultPanel> : null}</div>} />;
 }

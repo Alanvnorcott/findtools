@@ -145,3 +145,38 @@ export function ColorPaletteGeneratorTool({ tool, ...shellProps }) {
   tool.copyValue = () => palette.join("\n");
   return <ToolShell {...shellProps} tool={tool} instructions="Generate a five-color palette." inputArea={<ActionRow><button className="button" onClick={generate} type="button">Generate palette</button></ActionRow>} outputArea={<ResultPanel><div className="stack-sm">{palette.length ? palette.map((color) => <div className="kv-list__row" key={color}><dt>{color}</dt><dd><span className="swatch" style={{ background: color }} /></dd></div>) : <pre>Generate a palette to see colors here.</pre>}</div></ResultPanel>} />;
 }
+
+export function CouponCodeGeneratorTool({ tool, ...shellProps }) {
+  const [length, setLength] = useState("10");
+  const [value, setValue] = useState("");
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const generate = () => {
+    const size = Math.max(4, Number(length) || 10);
+    setValue(Array.from({ length: size }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join(""));
+  };
+  tool.copyValue = () => value;
+  return <ToolShell {...shellProps} tool={tool} instructions="Generate a clean coupon or promo code with readable characters." inputArea={<><ToolInput label="Code length"><input value={length} onChange={(e) => setLength(e.target.value)} /></ToolInput><ActionRow><button className="button" onClick={generate} type="button">Generate code</button></ActionRow></>} outputArea={<ResultPanel value={value || "Generate a code to see it here."} />} />;
+}
+
+export function RandomDateGeneratorTool({ tool, ...shellProps }) {
+  const [start, setStart] = useState("2026-01-01");
+  const [end, setEnd] = useState("2026-12-31");
+  const [value, setValue] = useState("");
+  const generate = () => {
+    const startTime = new Date(start).getTime();
+    const endTime = new Date(end).getTime();
+    const min = Math.min(startTime, endTime);
+    const max = Math.max(startTime, endTime);
+    const random = new Date(min + Math.random() * (max - min));
+    setValue(random.toISOString().slice(0, 10));
+  };
+  tool.copyValue = () => value;
+  return <ToolShell {...shellProps} tool={tool} instructions="Generate a random date between two calendar dates." inputArea={<><div className="split-fields"><ToolInput label="Start date"><input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></ToolInput><ToolInput label="End date"><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></ToolInput></div><ActionRow><button className="button" onClick={generate} type="button">Generate date</button></ActionRow></>} outputArea={<ResultPanel value={value || "Generate a date to see it here."} />} />;
+}
+
+export function AcronymGeneratorTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("Findtools utility workspace");
+  const output = useMemo(() => value.split(/\s+/).map((word) => word.trim()).filter(Boolean).map((word) => word[0]?.toUpperCase() || "").join(""), [value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Turn a phrase into an acronym using the first letter of each word." inputArea={<ToolInput label="Phrase"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output || "Enter a phrase to see an acronym."} />} />;
+}

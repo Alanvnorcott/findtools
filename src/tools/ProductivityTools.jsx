@@ -137,3 +137,32 @@ export function RemoveLineBreaksTool({ tool, ...shellProps }) {
   tool.copyValue = () => output;
   return <ToolShell {...shellProps} tool={tool} instructions="Remove line breaks and collapse the text into one line." inputArea={<ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output} />} />;
 }
+
+export function TrimLinesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("  alpha  \n bravo \ncharlie   ");
+  const output = useMemo(() => value.split(/\r?\n/).map((line) => line.trim()).join("\n"), [value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Trim leading and trailing whitespace from every line." inputArea={<ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function SortLinesByLengthTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("longer line\nmid\nshort");
+  const [direction, setDirection] = useState("asc");
+  const output = useMemo(() => value.split(/\r?\n/).filter(Boolean).sort((a, b) => direction === "asc" ? a.length - b.length || a.localeCompare(b) : b.length - a.length || a.localeCompare(b)).join("\n"), [direction, value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Sort lines by character length in ascending or descending order." inputArea={<><ToolInput label="Direction"><select value={direction} onChange={(e) => setDirection(e.target.value)}><option value="asc">Shortest first</option><option value="desc">Longest first</option></select></ToolInput><ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput></>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function NumberLinesWithoutBlankLinesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("alpha\n\nbravo\ncharlie\n");
+  const output = useMemo(() => {
+    let count = 0;
+    return value.split(/\r?\n/).map((line) => {
+      if (!line.trim()) return line;
+      count += 1;
+      return `${count}. ${line}`;
+    }).join("\n");
+  }, [value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Add numbers to non-empty lines while leaving blank lines untouched." inputArea={<ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output} />} />;
+}

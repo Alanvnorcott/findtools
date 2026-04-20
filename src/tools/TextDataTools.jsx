@@ -852,3 +852,140 @@ export function UrlGeneratorFromListTool({ tool, ...shellProps }) {
   tool.copyValue = () => output;
   return <ToolShell {...shellProps} tool={tool} instructions="Generate one clean URL per line from a list of labels." inputArea={<><ToolInput label="Base URL"><input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} /></ToolInput><ToolInput label="Line list"><textarea rows="12" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
 }
+
+export function TitleLengthCheckerTool({ tool, ...shellProps }) {
+  const state = textState("Quiet browser-based tools for daily work");
+  const count = state.value.length;
+  const status = count < 30 ? "Short" : count > 60 ? "Long" : "Good";
+  tool.copyValue = () => `${state.value}\nLength: ${count}\nStatus: ${status}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Check title length against common SEO display ranges." inputArea={<><ToolInput label="Title"><input value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel><KeyValueList items={[{ label: "Characters", value: String(count) }, { label: "Status", value: status }]} /></ResultPanel>} />;
+}
+
+export function MetaDescriptionLengthCheckerTool({ tool, ...shellProps }) {
+  const state = textState("Findtools keeps practical browser-based utilities in one calm workspace with local processing and instant results.");
+  const count = state.value.length;
+  const status = count < 70 ? "Short" : count > 160 ? "Long" : "Good";
+  tool.copyValue = () => `${state.value}\nLength: ${count}\nStatus: ${status}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Check meta description length for common search snippet ranges." inputArea={<><ToolInput label="Meta description"><textarea rows="5" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel><KeyValueList items={[{ label: "Characters", value: String(count) }, { label: "Status", value: status }]} /></ResultPanel>} />;
+}
+
+export function MetaTagPreviewerTool({ tool, ...shellProps }) {
+  const [title, setTitle] = useState("JSON Formatter - Findtools");
+  const [description, setDescription] = useState("Format JSON locally in the browser with instant output and no upload.");
+  const [url, setUrl] = useState("https://findtools.net/tools/json-formatter");
+  const output = useMemo(() => `<title>${title}</title>\n<meta name="description" content="${description}" />\n<link rel="canonical" href="${url}" />`, [description, title, url]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Preview common page-level SEO tags and the generated HTML." inputArea={<><ToolInput label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} /></ToolInput><ToolInput label="Description"><textarea rows="4" value={description} onChange={(e) => setDescription(e.target.value)} /></ToolInput><ToolInput label="Canonical URL"><input value={url} onChange={(e) => setUrl(e.target.value)} /></ToolInput><ActionRow><button className="button button--secondary" onClick={() => { setTitle("JSON Formatter - Findtools"); setDescription("Format JSON locally in the browser with instant output and no upload."); setUrl("https://findtools.net/tools/json-formatter"); }} type="button">Reset</button></ActionRow></>} outputArea={<div className="stack-sm"><ResultPanel title="Search preview">{<div className="stack-sm"><strong>{title}</strong><span>{url}</span><p>{description}</p></div>}</ResultPanel><ResultPanel value={output} /></div>} />;
+}
+
+export function OpenGraphPreviewerTool({ tool, ...shellProps }) {
+  const [title, setTitle] = useState("Findtools utility workspace");
+  const [description, setDescription] = useState("Browser-based tools that keep text, files, and quick calculations moving without uploads.");
+  const [url, setUrl] = useState("https://findtools.net");
+  const [siteName, setSiteName] = useState("Findtools");
+  const [imageUrl, setImageUrl] = useState("https://findtools.net/assets/og-default.png");
+  const output = useMemo(() => [
+    `<meta property="og:title" content="${title}" />`,
+    `<meta property="og:description" content="${description}" />`,
+    `<meta property="og:url" content="${url}" />`,
+    `<meta property="og:site_name" content="${siteName}" />`,
+    `<meta property="og:image" content="${imageUrl}" />`
+  ].join("\n"), [description, imageUrl, siteName, title, url]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Preview Open Graph tags and a simple social card layout." inputArea={<><ToolInput label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} /></ToolInput><ToolInput label="Description"><textarea rows="4" value={description} onChange={(e) => setDescription(e.target.value)} /></ToolInput><div className="split-fields"><ToolInput label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} /></ToolInput><ToolInput label="Site name"><input value={siteName} onChange={(e) => setSiteName(e.target.value)} /></ToolInput></div><ToolInput label="Image URL"><input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} /></ToolInput></>} outputArea={<div className="stack-sm"><ResultPanel title="Social preview">{<div className="stack-sm"><strong>{title}</strong><span>{siteName}</span><span>{url}</span><p>{description}</p></div>}</ResultPanel><ResultPanel value={output} /></div>} />;
+}
+
+export function RobotsTxtGeneratorTool({ tool, ...shellProps }) {
+  const [userAgent, setUserAgent] = useState("*");
+  const [disallow, setDisallow] = useState("/private\n/tmp");
+  const [allow, setAllow] = useState("/");
+  const [sitemap, setSitemap] = useState("https://findtools.net/sitemap.xml");
+  const output = useMemo(() => {
+    const allowLines = allow.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => `Allow: ${line}`);
+    const disallowLines = disallow.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => `Disallow: ${line}`);
+    return [`User-agent: ${userAgent}`, ...allowLines, ...disallowLines, `Sitemap: ${sitemap}`].join("\n");
+  }, [allow, disallow, sitemap, userAgent]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Generate a simple robots.txt file from common directives." inputArea={<><ToolInput label="User-agent"><input value={userAgent} onChange={(e) => setUserAgent(e.target.value)} /></ToolInput><ToolInput label="Allow rules"><textarea rows="4" value={allow} onChange={(e) => setAllow(e.target.value)} /></ToolInput><ToolInput label="Disallow rules"><textarea rows="4" value={disallow} onChange={(e) => setDisallow(e.target.value)} /></ToolInput><ToolInput label="Sitemap URL"><input value={sitemap} onChange={(e) => setSitemap(e.target.value)} /></ToolInput></>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function SitemapCheckerTool({ tool, ...shellProps }) {
+  const state = textState(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://findtools.net/</loc></url>\n  <url><loc>https://findtools.net/tools/json-formatter</loc></url>\n</urlset>`);
+  const result = useMemo(() => {
+    const doc = new DOMParser().parseFromString(state.value, "application/xml");
+    if (doc.querySelector("parsererror")) return { ok: false, items: [], text: "Invalid XML sitemap." };
+    const locs = [...doc.getElementsByTagName("loc")].map((node) => node.textContent?.trim() || "").filter(Boolean);
+    const duplicates = locs.length - new Set(locs).size;
+    const invalid = locs.filter((loc) => !/^https?:\/\//.test(loc)).length;
+    return { ok: true, text: "Sitemap parsed successfully.", items: [{ label: "URLs", value: String(locs.length) }, { label: "Duplicate URLs", value: String(duplicates) }, { label: "Invalid loc values", value: String(invalid) }] };
+  }, [state.value]);
+  tool.copyValue = () => [result.text, ...result.items.map((item) => `${item.label}: ${item.value}`)].join("\n");
+  return <ToolShell {...shellProps} tool={tool} instructions="Validate sitemap XML structure and count basic URL issues." validation={<InlineMessage tone={result.ok ? "success" : "error"}>{result.text}</InlineMessage>} inputArea={<><ToolInput label="Sitemap XML"><textarea rows="12" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel><KeyValueList items={result.items} /></ResultPanel>} />;
+}
+
+export function SchemaMarkupFormatterTool({ tool, ...shellProps }) {
+  const state = textState('{"@context":"https://schema.org","@type":"WebSite","name":"Findtools","url":"https://findtools.net"}');
+  const parsed = useMemo(() => {
+    try {
+      return { ok: true, text: JSON.stringify(JSON.parse(state.value), null, 2) };
+    } catch (error) {
+      return { ok: false, text: "", error: error.message };
+    }
+  }, [state.value]);
+  tool.copyValue = () => parsed.text;
+  return <ToolShell {...shellProps} tool={tool} instructions="Format JSON-LD schema markup and validate that it parses cleanly." validation={!parsed.ok ? <InlineMessage tone="error">{parsed.error}</InlineMessage> : null} inputArea={<><ToolInput label="Schema markup"><textarea rows="12" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={parsed.text} placeholder="Formatted schema JSON will appear here." />} />;
+}
+
+export function LineLengthCheckerTool({ tool, ...shellProps }) {
+  const state = textState("quiet tools\nbrowser utilities\nformat csv online");
+  const items = useMemo(() => state.value.split(/\r?\n/).map((line, index) => ({ label: `Line ${index + 1}`, value: `${line.length} chars` })), [state.value]);
+  tool.copyValue = () => items.map((item) => `${item.label}: ${item.value}`).join("\n");
+  return <ToolShell {...shellProps} tool={tool} instructions="Count the character length of each line in a block of text." inputArea={<><ToolInput label="Text input"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
+}
+
+export function AlphabeticalUniqueSorterTool({ tool, ...shellProps }) {
+  const state = textState("beta\nalpha\nbeta\ncharlie");
+  const output = useMemo(() => [...new Set(state.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)).join("\n"), [state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Deduplicate a line list and sort the result alphabetically." inputArea={<><ToolInput label="Line list"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function EmailListCleanerTool({ tool, ...shellProps }) {
+  const state = textState(" Ava@example.com \nava@example.com\nBEN@example.com\nnot-an-email");
+  const output = useMemo(() => [...new Set((state.value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []).map((email) => email.toLowerCase()))].join("\n"), [state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Extract, normalize, deduplicate, and clean an email list." inputArea={<><ToolInput label="Mixed email text"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} placeholder="Clean email list will appear here." />} />;
+}
+
+export function CsvHeaderExtractorTool({ tool, ...shellProps }) {
+  const state = textState("name,email,team\nAva,ava@example.com,Product");
+  const output = useMemo(() => {
+    const [header = []] = parseCsv(state.value);
+    return header.join("\n");
+  }, [state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Extract only the header row from CSV input." inputArea={<><ToolInput label="CSV input"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function WordListToJsonArrayTool({ tool, ...shellProps }) {
+  const state = textState("alpha\nbravo\ncharlie");
+  const output = useMemo(() => JSON.stringify(state.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean), null, 2), [state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Turn one word or phrase per line into a formatted JSON array." inputArea={<><ToolInput label="Line list"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function TextPrefixRemoverTool({ tool, ...shellProps }) {
+  const state = textState("ID-100\nID-200\nID-300");
+  const [prefix, setPrefix] = useState("ID-");
+  const output = useMemo(() => state.value.split(/\r?\n/).map((line) => line.startsWith(prefix) ? line.slice(prefix.length) : line).join("\n"), [prefix, state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove the same prefix from each line when present." inputArea={<><ToolInput label="Prefix"><input value={prefix} onChange={(e) => setPrefix(e.target.value)} /></ToolInput><ToolInput label="Line list"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function TextSuffixRemoverTool({ tool, ...shellProps }) {
+  const state = textState("report.pdf\nnotes.pdf\ndraft.pdf");
+  const [suffix, setSuffix] = useState(".pdf");
+  const output = useMemo(() => state.value.split(/\r?\n/).map((line) => line.endsWith(suffix) ? line.slice(0, -suffix.length) : line).join("\n"), [state.value, suffix]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove the same suffix from each line when present." inputArea={<><ToolInput label="Suffix"><input value={suffix} onChange={(e) => setSuffix(e.target.value)} /></ToolInput><ToolInput label="Line list"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
