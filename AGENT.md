@@ -144,6 +144,9 @@ All tools must follow a standardized pattern:
 - shared page shell
 - reusable components
 - isolated logic
+- SEO metadata expansion
+- internal linking
+- repeatable long-tail coverage rules
 
 Each tool must be easy to:
 - add
@@ -152,6 +155,25 @@ Each tool must be easy to:
 - reuse patterns from
 
 This project should scale cleanly to 100+ tools.
+It should also scale cleanly to hundreds of search-targeted pages without becoming a hand-authored mess.
+
+## SEO System Requirement
+
+Findtools is not just a UI catalog.
+It is a search coverage engine built from tools.
+
+Every meaningful tool should be treated as an independent SEO surface with:
+- one primary keyword
+- several long-tail variants
+- a clear canonical slug
+- dense internal links
+- real explanatory content
+
+Avoid vague, broad targets like "math tool" or "text utility".
+Prefer high-intent phrases like "percentage increase calculator" or "json formatter".
+
+Where possible, reuse the programmatic SEO graph layer instead of hand-writing disconnected metadata.
+If a new repeatable SEO rule emerges, document it in `TOOL.md` and/or `README.md`.
 
 ---
 

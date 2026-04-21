@@ -44,10 +44,12 @@ If Pages is left on `Deploy from a branch` with `main`, GitHub serves the source
 ## Project structure
 
 - `src/data/toolRegistry.js`: single source of truth for tool metadata and component mapping
+- `src/data/seoProgram.js`: programmatic SEO outputs including a core 20-tool dataset, sitemap structure, and keyword coverage map
 - `src/data/categories.js`: shared category system
 - `src/components/ToolShell.jsx`: standardized layout for tool pages
 - `src/tools/`: grouped tool implementations
 - `src/styles/global.css`: shared design system and layout styling
+- `src/lib/seoGraph.js`: repeatable SEO graph generation and enrichment rules
 - `AGENT.md`: global agent rules for the repo
 - `TOOL.md`: required tool contract and design rules
 
@@ -60,6 +62,7 @@ If Pages is left on `Deploy from a branch` with `main`, GitHub serves the source
 5. Build the UI with the shared `ToolShell` and shared primitives.
 6. Add the metadata entry to `src/data/toolRegistry.js`.
 7. Verify that homepage search, category views, and the direct tool route all work automatically from the registry entry.
+8. Make sure the tool can be enriched by the SEO graph layer with a primary keyword, variants, related tools, and explanation content.
 
 ## Unit test pattern
 
@@ -79,6 +82,21 @@ src/lib/toolLogic/calculators.test.js
 ```
 
 This stays out of the production bundle because `vitest` is a dev dependency, test files are never imported by runtime code, and Vite only bundles the app entry graph.
+
+## Programmatic SEO layer
+
+The repo now includes a reusable SEO graph layer in `src/lib/seoGraph.js`.
+
+It supports:
+- enriching existing tools with primary keyword targets, long-tail variants, missing variants, related tool slugs, FAQs, examples, and explanatory content
+- bulk generation with `generateTools(category, seedKeywords)`
+- sitemap structure generation
+- keyword coverage summaries
+
+`src/data/seoProgram.js` provides the first execution output:
+- a 20-tool core SEO dataset
+- sitemap structure
+- keyword coverage map
 
 ## Static hosting
 

@@ -14,18 +14,21 @@ export function ToolShell({
   sample,
   extra
 }) {
-  const relatedTools = toolRegistry
-    .filter((entry) => entry.slug !== tool.slug)
-    .map((entry) => {
-      let score = 0;
-      if (entry.category === tool.category) score += 2;
-      score += entry.tags.filter((tag) => tool.tags.includes(tag)).length;
-      return { entry, score };
-    })
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.entry.name.localeCompare(b.entry.name))
-    .slice(0, 6)
-    .map((item) => item.entry);
+  const relatedTools = (tool.relatedTools?.length
+    ? tool.relatedTools.map((slug) => toolRegistry.find((entry) => entry.slug === slug)).filter(Boolean)
+    : toolRegistry
+        .filter((entry) => entry.slug !== tool.slug)
+        .map((entry) => {
+          let score = 0;
+          if (entry.category === tool.category) score += 2;
+          score += entry.tags.filter((tag) => tool.tags.includes(tag)).length;
+          return { entry, score };
+        })
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score || a.entry.name.localeCompare(b.entry.name))
+        .slice(0, 6)
+        .map((item) => item.entry)
+  ).slice(0, 10);
 
   const trustMessage = tool.supportsLocalFiles
     ? "Files stay in your browser. We do not upload, store, share, or retain the files you use here."
@@ -83,6 +86,8 @@ export function ToolShell({
 
         {extra ? <SectionCard title="Notes">{extra}</SectionCard> : null}
 
+        {tool.description ? <SectionCard title="How It Works"><p>{tool.description}</p></SectionCard> : null}
+
         {tool.useCases?.length ? (
           <SectionCard title="Use Cases" subtitle="Common reasons people use this tool.">
             <ul className="content-list">
@@ -117,7 +122,7 @@ export function ToolShell({
         ) : null}
 
         {relatedTools.length ? (
-          <SectionCard title="Related Tools" subtitle="Nearby tools based on intent, category, and tags.">
+          <SectionCard title="Related Tools" subtitle="Variant, inverse, and adjacent tools for the same job family.">
             <ToolList tools={relatedTools} />
           </SectionCard>
         ) : null}

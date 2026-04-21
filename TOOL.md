@@ -216,6 +216,13 @@ That means:
 - useful H1
 - concise supporting copy
 
+Each tool should also define or derive:
+- one primary keyword target
+- 3 to 10 long-tail keyword variants
+- missing variants that may deserve their own pages later
+- 5 to 10 related tools for internal linking
+- 150 to 300 words of real explanatory content
+
 Do not stuff pages with filler text.
 
 ## Shared implementation expectation
@@ -228,6 +235,7 @@ Suggested structure:
 - core processing logic
 - page component
 - tests if included
+- SEO enrichment or programmatic SEO data when relevant
 
 Recommended test structure:
 - move main logic into `src/lib/toolLogic/<category>.js` when practical
@@ -277,4 +285,5 @@ A tool is done when:
 5. it has metadata and category assignment
 6. it supports the expected utility actions
 7. it has a small unit test unless it was deliberately treated as low-tier / low-demand
-8. it does not visually or architecturally drift from the rest of the site
+8. it has real explanatory content and internal links when it is a meaningful search-targeted tool
+9. it does not visually or architecturally drift from the rest of the site

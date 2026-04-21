@@ -5,43 +5,45 @@ import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { addRecentTool, PINNED_TOOLS_KEY, RECENT_TOOLS_KEY, togglePinnedTool } from "../lib/storage";
 import { trackEvent } from "../lib/analytics";
+import { enrichToolForSeo } from "../lib/seoGraph";
 
 export function ToolPage() {
   const { toolSlug } = useParams();
   const tool = toolRegistry.find((entry) => entry.slug === toolSlug);
   const aliasMatch = !tool ? toolRegistry.find((entry) => (entry.aliases || []).includes(toolSlug)) : null;
+  const resolvedTool = tool ? enrichToolForSeo(tool, toolRegistry) : null;
   const [pinnedTools, setPinnedTools] = useLocalStorage(PINNED_TOOLS_KEY, []);
   const [recentTools, setRecentTools] = useLocalStorage(RECENT_TOOLS_KEY, []);
 
-  useDocumentMeta(tool?.seoTitle, tool?.seoDescription ?? "Findtools tool");
+  useDocumentMeta(resolvedTool?.seoTitle, resolvedTool?.seoDescription ?? "Findtools tool");
 
   useEffect(() => {
-    if (!tool) return;
-    if (recentTools[0] === tool.slug) return;
-    setRecentTools((existing) => addRecentTool(existing, tool.slug));
-  }, [recentTools, setRecentTools, tool]);
+    if (!resolvedTool) return;
+    if (recentTools[0] === resolvedTool.slug) return;
+    setRecentTools((existing) => addRecentTool(existing, resolvedTool.slug));
+  }, [recentTools, resolvedTool, setRecentTools]);
 
   useEffect(() => {
-    if (!tool) return;
-    trackEvent("tool_view", { slug: tool.slug, category: tool.category });
-  }, [tool]);
+    if (!resolvedTool) return;
+    trackEvent("tool_view", { slug: resolvedTool.slug, category: resolvedTool.category, keyword: resolvedTool.primaryKeyword });
+  }, [resolvedTool]);
 
   if (aliasMatch) {
     return <Navigate to={`/tools/${aliasMatch.slug}`} replace />;
   }
 
-  if (!tool) {
+  if (!resolvedTool) {
     return <Navigate to="/" replace />;
   }
 
-  const Component = tool.component;
+  const Component = resolvedTool.component;
 
   return (
     <Suspense fallback={<div className="section-card">Loading tool…</div>}>
       <Component
         isPinned={pinnedTools.includes(tool.slug)}
-        onTogglePinned={() => setPinnedTools((existing) => togglePinnedTool(existing, tool.slug))}
-        tool={tool}
+        onTogglePinned={() => setPinnedTools((existing) => togglePinnedTool(existing, resolvedTool.slug))}
+        tool={resolvedTool}
       />
     </Suspense>
   );
