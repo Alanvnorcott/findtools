@@ -258,6 +258,22 @@ When adding a tool:
 5. Follow input/output standards
 6. Implement logic fully in browser
 7. Add copy/reset behavior
+8. Add or update a small unit test for the core logic unless the tool is intentionally marked as very low-tier / low-demand filler
+
+## Testing Requirement
+
+Testing is the default, not an afterthought.
+
+For any tool with real demand, reuse potential, or meaningful logic:
+- extract core deterministic logic into `src/lib/toolLogic/` when practical
+- add or extend a small Vitest file
+- cover:
+  - the main valid path
+  - one important edge case
+  - invalid handling if applicable
+
+Only skip tests when the tool is clearly very low-tier, trivial, and unlikely to justify maintenance overhead.
+If you skip tests, keep the implementation especially simple and do not skip them by accident.
 8. Add tags for search
 9. Ensure visual consistency
 

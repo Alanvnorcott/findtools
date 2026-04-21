@@ -180,3 +180,52 @@ export function AcronymGeneratorTool({ tool, ...shellProps }) {
   tool.copyValue = () => output;
   return <ToolShell {...shellProps} tool={tool} instructions="Turn a phrase into an acronym using the first letter of each word." inputArea={<ToolInput label="Phrase"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output || "Enter a phrase to see an acronym."} />} />;
 }
+
+export function PinGeneratorTool({ tool, ...shellProps }) {
+  const [length, setLength] = useState("6");
+  const [value, setValue] = useState("");
+  const generate = () => {
+    const size = Math.max(4, Number(length) || 6);
+    setValue(Array.from({ length: size }, () => Math.floor(Math.random() * 10)).join(""));
+  };
+  tool.copyValue = () => value;
+  return <ToolShell {...shellProps} tool={tool} instructions="Generate a numeric PIN locally in the browser." inputArea={<><ToolInput label="PIN length"><input value={length} onChange={(e) => setLength(e.target.value)} /></ToolInput><ActionRow><button className="button" onClick={generate} type="button">Generate PIN</button></ActionRow></>} outputArea={<ResultPanel value={value || "Generate a PIN to see it here."} />} />;
+}
+
+export function SecureTokenGeneratorTool({ tool, ...shellProps }) {
+  const [bytes, setBytes] = useState("16");
+  const [value, setValue] = useState("");
+  const generate = () => {
+    const size = Math.max(8, Number(bytes) || 16);
+    const array = crypto.getRandomValues(new Uint8Array(size));
+    setValue([...array].map((item) => item.toString(16).padStart(2, "0")).join(""));
+  };
+  tool.copyValue = () => value;
+  return <ToolShell {...shellProps} tool={tool} instructions="Generate a secure random hex token using the browser crypto API." inputArea={<><ToolInput label="Bytes"><input value={bytes} onChange={(e) => setBytes(e.target.value)} /></ToolInput><ActionRow><button className="button" onClick={generate} type="button">Generate token</button></ActionRow></>} outputArea={<ResultPanel value={value || "Generate a token to see it here."} />} />;
+}
+
+export function RandomTimeGeneratorTool({ tool, ...shellProps }) {
+  const [startHour, setStartHour] = useState("9");
+  const [endHour, setEndHour] = useState("17");
+  const [value, setValue] = useState("");
+  const generate = () => {
+    const start = Math.max(0, Math.min(23, Number(startHour) || 0));
+    const end = Math.max(start, Math.min(23, Number(endHour) || start));
+    const totalSpan = (end - start + 1) * 60;
+    const totalMinutes = start * 60 + Math.floor(Math.random() * totalSpan);
+    const hours = Math.floor(totalMinutes / 60) % 24;
+    const minutes = totalMinutes % 60;
+    setValue(`${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`);
+  };
+  tool.copyValue = () => value;
+  return <ToolShell {...shellProps} tool={tool} instructions="Generate a random time inside a daily hour range." inputArea={<><div className="split-fields"><ToolInput label="Start hour"><input value={startHour} onChange={(e) => setStartHour(e.target.value)} /></ToolInput><ToolInput label="End hour"><input value={endHour} onChange={(e) => setEndHour(e.target.value)} /></ToolInput></div><ActionRow><button className="button" onClick={generate} type="button">Generate time</button></ActionRow></>} outputArea={<ResultPanel value={value || "Generate a time to see it here."} />} />;
+}
+
+export function ProjectNameGeneratorTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("");
+  const adjectives = ["Quiet", "North", "Clear", "Solid", "Swift", "Open"];
+  const nouns = ["Signal", "Forge", "Harbor", "Canvas", "Relay", "Atlas"];
+  const generate = () => setValue(`${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`);
+  tool.copyValue = () => value;
+  return <ToolShell {...shellProps} tool={tool} instructions="Generate a short project or codename idea." inputArea={<ActionRow><button className="button" onClick={generate} type="button">Generate project name</button></ActionRow>} outputArea={<ResultPanel value={value || "Generate a project name to see it here."} />} />;
+}

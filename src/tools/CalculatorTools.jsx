@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { ActionRow, KeyValueList, ResultPanel, ToolInput } from "../components/common";
 import { ToolShell } from "../components/ToolShell";
+import { calculateAspectRatio, calculateGradePercentage, calculatePercentage, calculateRunway, evaluateWeightedDecision, toFiniteNumber } from "../lib/toolLogic/calculators";
 
 function toNumber(value) {
-  const next = Number(value);
-  return Number.isFinite(next) ? next : 0;
+  return toFiniteNumber(value);
 }
 
 function currency(value) {
@@ -81,13 +81,11 @@ export function PercentageCalculatorTool({ tool, ...shellProps }) {
   const [value, setValue] = useState("400");
   const [pct, setPct] = useState("15");
   const result = useMemo(() => {
-    const amount = toNumber(value);
-    const rate = toNumber(pct);
-    const output = (amount * rate) / 100;
-    return calcResult(`${pct}% of ${value} = ${number(output)}`, [
-      { label: "Value", value: number(amount) },
-      { label: "Percent", value: percent(rate) },
-      { label: "Result", value: number(output) }
+    const calculation = calculatePercentage(value, pct);
+    return calcResult(`${pct}% of ${value} = ${number(calculation.result)}`, [
+      { label: "Value", value: number(calculation.value) },
+      { label: "Percent", value: percent(calculation.percent) },
+      { label: "Result", value: number(calculation.result) }
     ]);
   }, [pct, value]);
 
@@ -1455,29 +1453,6 @@ function monthlyPayment(principal, annualRate, months) {
   return principal * ((r * (1 + r) ** n) / ((1 + r) ** n - 1));
 }
 
-function gcd(a, b) {
-  let x = Math.abs(Math.round(a));
-  let y = Math.abs(Math.round(b));
-  while (y) {
-    const temp = y;
-    y = x % y;
-    x = temp;
-  }
-  return x || 1;
-}
-
-function parseWeightedLines(value) {
-  return value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
-    const [criterion, weight, scoreA, scoreB] = line.split("|").map((item) => item.trim());
-    return {
-      criterion,
-      weight: toNumber(weight) || 1,
-      scoreA: toNumber(scoreA),
-      scoreB: toNumber(scoreB)
-    };
-  });
-}
-
 function parseScoredList(value) {
   return value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
     const [label, score] = line.split("|").map((item) => item.trim());
@@ -1491,16 +1466,12 @@ export function AspectRatioCalculatorTool({ tool, ...shellProps }) {
   const [targetWidth, setTargetWidth] = useState("1200");
   const [targetHeight, setTargetHeight] = useState("");
   const result = useMemo(() => {
-    const w = Math.max(1, toNumber(width));
-    const h = Math.max(1, toNumber(height));
-    const divisor = gcd(w, h);
-    const nextHeight = targetWidth ? (toNumber(targetWidth) * h) / w : 0;
-    const nextWidth = targetHeight ? (toNumber(targetHeight) * w) / h : 0;
-    return calcResult(`Aspect ratio: ${w / divisor}:${h / divisor}`, [
-      { label: "Original size", value: `${w} × ${h}` },
-      { label: "Simplified ratio", value: `${w / divisor}:${h / divisor}` },
-      { label: "Height at target width", value: targetWidth ? `${number(nextHeight, 0)} px` : "-" },
-      { label: "Width at target height", value: targetHeight ? `${number(nextWidth, 0)} px` : "-" }
+    const calculation = calculateAspectRatio({ width, height, targetWidth, targetHeight });
+    return calcResult(`Aspect ratio: ${calculation.ratioWidth}:${calculation.ratioHeight}`, [
+      { label: "Original size", value: `${calculation.width} × ${calculation.height}` },
+      { label: "Simplified ratio", value: `${calculation.ratioWidth}:${calculation.ratioHeight}` },
+      { label: "Height at target width", value: targetWidth ? `${number(calculation.heightAtTargetWidth, 0)} px` : "-" },
+      { label: "Width at target height", value: targetHeight ? `${number(calculation.widthAtTargetHeight, 0)} px` : "-" }
     ]);
   }, [height, targetHeight, targetWidth, width]);
   return <CalculatorTool {...shellProps} tool={tool} instructions="Simplify an aspect ratio and calculate matching dimensions." fields={<><div className="split-fields"><ToolInput label="Width"><input value={width} onChange={(e) => setWidth(e.target.value)} /></ToolInput><ToolInput label="Height"><input value={height} onChange={(e) => setHeight(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="Target width"><input value={targetWidth} onChange={(e) => setTargetWidth(e.target.value)} /></ToolInput><ToolInput label="Target height"><input value={targetHeight} onChange={(e) => setTargetHeight(e.target.value)} /></ToolInput></div></>} result={result} reset={() => { setWidth("1920"); setHeight("1080"); setTargetWidth("1200"); setTargetHeight(""); }} />;
@@ -1510,11 +1481,7 @@ export function WeightedDecisionMatrixTool({ tool, ...shellProps }) {
   const [optionA, setOptionA] = useState("Option A");
   const [optionB, setOptionB] = useState("Option B");
   const [matrix, setMatrix] = useState("Price|5|8|6\nSpeed|4|7|9\nRisk|3|9|6");
-  const rows = useMemo(() => parseWeightedLines(matrix), [matrix]);
-  const totals = useMemo(() => rows.reduce((acc, row) => ({
-    a: acc.a + row.weight * row.scoreA,
-    b: acc.b + row.weight * row.scoreB
-  }), { a: 0, b: 0 }), [rows]);
+  const { rows, totals } = useMemo(() => evaluateWeightedDecision(matrix), [matrix]);
   const winner = totals.a === totals.b ? "Tie" : totals.a > totals.b ? optionA : optionB;
   tool.copyValue = () => `${optionA}: ${totals.a}\n${optionB}: ${totals.b}\nWinner: ${winner}`;
   return <ToolShell {...shellProps} tool={tool} instructions="Score two options with weighted criteria using lines like Criterion|Weight|Score A|Score B." inputArea={<><div className="split-fields"><ToolInput label="Option A name"><input value={optionA} onChange={(e) => setOptionA(e.target.value)} /></ToolInput><ToolInput label="Option B name"><input value={optionB} onChange={(e) => setOptionB(e.target.value)} /></ToolInput></div><ToolInput label="Criteria matrix"><textarea rows="10" value={matrix} onChange={(e) => setMatrix(e.target.value)} /></ToolInput><ActionRow><button className="button button--secondary" onClick={() => { setOptionA("Option A"); setOptionB("Option B"); setMatrix("Price|5|8|6\nSpeed|4|7|9\nRisk|3|9|6"); }} type="button">Reset</button></ActionRow></>} outputArea={<div className="stack-sm"><ResultPanel value={`Winner: ${winner}`} /><ResultPanel title="Score totals"><KeyValueList items={[{ label: optionA, value: number(totals.a) }, { label: optionB, value: number(totals.b) }]} /></ResultPanel></div>} />;
@@ -1668,4 +1635,115 @@ export function RuleOf72CalculatorTool({ tool, ...shellProps }) {
     ]);
   }, [rate]);
   return <CalculatorTool {...shellProps} tool={tool} instructions="Estimate how many years it takes for money to double using the Rule of 72." fields={<ToolInput label="Annual rate %"><input value={rate} onChange={(e) => setRate(e.target.value)} /></ToolInput>} result={result} reset={() => setRate("8")} />;
+}
+
+export function GradePercentageCalculatorTool({ tool, ...shellProps }) {
+  const [earned, setEarned] = useState("42");
+  const [possible, setPossible] = useState("50");
+  const result = useMemo(() => {
+    const calculation = calculateGradePercentage(earned, possible);
+    return calcResult(`Grade: ${percent(calculation.percentage)}`, [
+      { label: "Points earned", value: number(calculation.earned, 0) },
+      { label: "Points possible", value: number(calculation.possible, 0) },
+      { label: "Percentage", value: percent(calculation.percentage) }
+    ]);
+  }, [earned, possible]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Calculate a grade percentage from earned and possible points." fields={pair(<ToolInput key="earned" label="Points earned"><input value={earned} onChange={(e) => setEarned(e.target.value)} /></ToolInput>, <ToolInput key="possible" label="Points possible"><input value={possible} onChange={(e) => setPossible(e.target.value)} /></ToolInput>)} result={result} reset={() => { setEarned("42"); setPossible("50"); }} />;
+}
+
+export function PricePerSquareFootCalculatorTool({ tool, ...shellProps }) {
+  const [price, setPrice] = useState("420000");
+  const [squareFeet, setSquareFeet] = useState("1850");
+  const result = useMemo(() => {
+    const totalPrice = toNumber(price);
+    const area = Math.max(1, toNumber(squareFeet));
+    const unit = totalPrice / area;
+    return calcResult(`Price per square foot: ${currency(unit)}`, [
+      { label: "Price", value: currency(totalPrice) },
+      { label: "Square feet", value: number(area, 0) },
+      { label: "Unit price", value: currency(unit) }
+    ]);
+  }, [price, squareFeet]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Calculate the price per square foot from total price and area." fields={pair(<ToolInput key="price" label="Total price"><input value={price} onChange={(e) => setPrice(e.target.value)} /></ToolInput>, <ToolInput key="sqft" label="Square feet"><input value={squareFeet} onChange={(e) => setSquareFeet(e.target.value)} /></ToolInput>)} result={result} reset={() => { setPrice("420000"); setSquareFeet("1850"); }} />;
+}
+
+export function BurnRateCalculatorTool({ tool, ...shellProps }) {
+  const [startingCash, setStartingCash] = useState("120000");
+  const [endingCash, setEndingCash] = useState("95000");
+  const [months, setMonths] = useState("3");
+  const result = useMemo(() => {
+    const start = toNumber(startingCash);
+    const end = toNumber(endingCash);
+    const period = Math.max(1, toNumber(months));
+    const burn = Math.max(0, start - end) / period;
+    return calcResult(`Monthly burn rate: ${currency(burn)}`, [
+      { label: "Cash used", value: currency(Math.max(0, start - end)) },
+      { label: "Months", value: number(period, 0) },
+      { label: "Burn per month", value: currency(burn) }
+    ]);
+  }, [endingCash, months, startingCash]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Estimate monthly burn rate from starting cash, ending cash, and elapsed months." fields={<><div className="split-fields"><ToolInput label="Starting cash"><input value={startingCash} onChange={(e) => setStartingCash(e.target.value)} /></ToolInput><ToolInput label="Ending cash"><input value={endingCash} onChange={(e) => setEndingCash(e.target.value)} /></ToolInput></div><ToolInput label="Months elapsed"><input value={months} onChange={(e) => setMonths(e.target.value)} /></ToolInput></>} result={result} reset={() => { setStartingCash("120000"); setEndingCash("95000"); setMonths("3"); }} />;
+}
+
+export function RunwayCalculatorTool({ tool, ...shellProps }) {
+  const [cash, setCash] = useState("60000");
+  const [monthlyBurn, setMonthlyBurn] = useState("5000");
+  const result = useMemo(() => {
+    const calculation = calculateRunway(cash, monthlyBurn);
+    return calcResult(`Estimated runway: ${number(calculation.months, 1)} months`, [
+      { label: "Cash reserve", value: currency(calculation.cash) },
+      { label: "Monthly burn", value: currency(calculation.monthlyBurn) },
+      { label: "Runway", value: `${number(calculation.months, 1)} months` }
+    ]);
+  }, [cash, monthlyBurn]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Estimate how many months your cash reserve lasts at the current burn rate." fields={pair(<ToolInput key="cash" label="Cash reserve"><input value={cash} onChange={(e) => setCash(e.target.value)} /></ToolInput>, <ToolInput key="burn" label="Monthly burn"><input value={monthlyBurn} onChange={(e) => setMonthlyBurn(e.target.value)} /></ToolInput>)} result={result} reset={() => { setCash("60000"); setMonthlyBurn("5000"); }} />;
+}
+
+export function VacationBudgetCalculatorTool({ tool, ...shellProps }) {
+  const [travel, setTravel] = useState("650");
+  const [lodgingPerNight, setLodgingPerNight] = useState("180");
+  const [foodPerDay, setFoodPerDay] = useState("65");
+  const [days, setDays] = useState("5");
+  const [extras, setExtras] = useState("250");
+  const result = useMemo(() => {
+    const tripDays = Math.max(1, toNumber(days));
+    const total = toNumber(travel) + toNumber(lodgingPerNight) * tripDays + toNumber(foodPerDay) * tripDays + toNumber(extras);
+    return calcResult(`Estimated trip budget: ${currency(total)}`, [
+      { label: "Travel", value: currency(toNumber(travel)) },
+      { label: "Lodging", value: currency(toNumber(lodgingPerNight) * tripDays) },
+      { label: "Food", value: currency(toNumber(foodPerDay) * tripDays) },
+      { label: "Extras", value: currency(toNumber(extras)) }
+    ]);
+  }, [days, extras, foodPerDay, lodgingPerNight, travel]);
+  return <CalculatorTool {...shellProps} tool={tool} instructions="Estimate a simple vacation budget from travel, lodging, food, and extras." fields={<><div className="split-fields"><ToolInput label="Travel"><input value={travel} onChange={(e) => setTravel(e.target.value)} /></ToolInput><ToolInput label="Lodging per night"><input value={lodgingPerNight} onChange={(e) => setLodgingPerNight(e.target.value)} /></ToolInput><ToolInput label="Food per day"><input value={foodPerDay} onChange={(e) => setFoodPerDay(e.target.value)} /></ToolInput></div><div className="split-fields"><ToolInput label="Days"><input value={days} onChange={(e) => setDays(e.target.value)} /></ToolInput><ToolInput label="Extras"><input value={extras} onChange={(e) => setExtras(e.target.value)} /></ToolInput></div></>} result={result} reset={() => { setTravel("650"); setLodgingPerNight("180"); setFoodPerDay("65"); setDays("5"); setExtras("250"); }} />;
+}
+
+export function SoftwarePlanComparisonTool({ tool, ...shellProps }) {
+  const [planA, setPlanA] = useState("Starter");
+  const [planB, setPlanB] = useState("Pro");
+  const [matrix, setMatrix] = useState("Price|5|9|6\nFeatures|4|6|9\nSupport|3|5|8");
+  const { totals } = useMemo(() => evaluateWeightedDecision(matrix), [matrix]);
+  const winner = totals.a === totals.b ? "Tie" : totals.a > totals.b ? planA : planB;
+  tool.copyValue = () => `${planA}: ${totals.a}\n${planB}: ${totals.b}\nWinner: ${winner}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Compare two software plans with weighted criteria." inputArea={<><div className="split-fields"><ToolInput label="Plan A"><input value={planA} onChange={(e) => setPlanA(e.target.value)} /></ToolInput><ToolInput label="Plan B"><input value={planB} onChange={(e) => setPlanB(e.target.value)} /></ToolInput></div><ToolInput label="Criteria matrix"><textarea rows="10" value={matrix} onChange={(e) => setMatrix(e.target.value)} /></ToolInput></>} outputArea={<ResultPanel title="Comparison" value={`Winner: ${winner}\n${planA}: ${number(totals.a)}\n${planB}: ${number(totals.b)}`} />} />;
+}
+
+export function VendorComparisonTool({ tool, ...shellProps }) {
+  const [vendorA, setVendorA] = useState("Vendor A");
+  const [vendorB, setVendorB] = useState("Vendor B");
+  const [matrix, setMatrix] = useState("Cost|5|8|6\nReliability|4|7|9\nSpeed|3|6|8");
+  const { totals } = useMemo(() => evaluateWeightedDecision(matrix), [matrix]);
+  const winner = totals.a === totals.b ? "Tie" : totals.a > totals.b ? vendorA : vendorB;
+  tool.copyValue = () => `${vendorA}: ${totals.a}\n${vendorB}: ${totals.b}\nWinner: ${winner}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Compare two vendors with weighted criteria." inputArea={<><div className="split-fields"><ToolInput label="Vendor A"><input value={vendorA} onChange={(e) => setVendorA(e.target.value)} /></ToolInput><ToolInput label="Vendor B"><input value={vendorB} onChange={(e) => setVendorB(e.target.value)} /></ToolInput></div><ToolInput label="Criteria matrix"><textarea rows="10" value={matrix} onChange={(e) => setMatrix(e.target.value)} /></ToolInput></>} outputArea={<ResultPanel title="Comparison" value={`Winner: ${winner}\n${vendorA}: ${number(totals.a)}\n${vendorB}: ${number(totals.b)}`} />} />;
+}
+
+export function StreamingServiceComparisonTool({ tool, ...shellProps }) {
+  const [serviceA, setServiceA] = useState("Service A");
+  const [serviceB, setServiceB] = useState("Service B");
+  const [matrix, setMatrix] = useState("Price|5|8|6\nCatalog|4|6|9\nAds|3|9|5");
+  const { totals } = useMemo(() => evaluateWeightedDecision(matrix), [matrix]);
+  const winner = totals.a === totals.b ? "Tie" : totals.a > totals.b ? serviceA : serviceB;
+  tool.copyValue = () => `${serviceA}: ${totals.a}\n${serviceB}: ${totals.b}\nWinner: ${winner}`;
+  return <ToolShell {...shellProps} tool={tool} instructions="Compare two streaming services with weighted criteria." inputArea={<><div className="split-fields"><ToolInput label="Service A"><input value={serviceA} onChange={(e) => setServiceA(e.target.value)} /></ToolInput><ToolInput label="Service B"><input value={serviceB} onChange={(e) => setServiceB(e.target.value)} /></ToolInput></div><ToolInput label="Criteria matrix"><textarea rows="10" value={matrix} onChange={(e) => setMatrix(e.target.value)} /></ToolInput></>} outputArea={<ResultPanel title="Comparison" value={`Winner: ${winner}\n${serviceA}: ${number(totals.a)}\n${serviceB}: ${number(totals.b)}`} />} />;
 }

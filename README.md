@@ -23,6 +23,12 @@ Production build:
 npm run build
 ```
 
+Unit tests:
+
+```bash
+npm run test:run
+```
+
 ## GitHub Pages
 
 This app must be deployed from the Vite production build output, not from the raw repository source.
@@ -48,10 +54,31 @@ If Pages is left on `Deploy from a branch` with `main`, GitHub serves the source
 ## Adding a new tool
 
 1. Read `AGENT.md` and `TOOL.md`.
-2. Implement the tool inside the relevant file in `src/tools/`, or create a new grouped tool module if the category grows.
-3. Build the UI with the shared `ToolShell` and shared primitives.
-4. Add the metadata entry to `src/data/toolRegistry.js`.
-5. Verify that homepage search, category views, and the direct tool route all work automatically from the registry entry.
+2. Extract the core logic into a small pure function in `src/lib/toolLogic/` when the behavior is testable without React.
+3. Add a tiny adjacent `*.test.js` file with the baseline coverage: one valid path, one edge case, and invalid handling if the tool has it.
+4. Implement the UI inside the relevant file in `src/tools/`, or create a new grouped tool module if the category grows.
+5. Build the UI with the shared `ToolShell` and shared primitives.
+6. Add the metadata entry to `src/data/toolRegistry.js`.
+7. Verify that homepage search, category views, and the direct tool route all work automatically from the registry entry.
+
+## Unit test pattern
+
+- Keep tool tests focused on pure logic, not full component rendering.
+- Put shared tool logic in `src/lib/toolLogic/<category>.js`.
+- Keep tests next to that logic as `src/lib/toolLogic/<category>.test.js`.
+- Do not import test helpers into runtime code.
+- GitHub Actions runs `npm run test:run` before build/deploy, so failed tests block deployment.
+
+Example pattern:
+
+```text
+src/lib/toolLogic/textData.js
+src/lib/toolLogic/textData.test.js
+src/lib/toolLogic/calculators.js
+src/lib/toolLogic/calculators.test.js
+```
+
+This stays out of the production bundle because `vitest` is a dev dependency, test files are never imported by runtime code, and Vite only bundles the app entry graph.
 
 ## Static hosting
 

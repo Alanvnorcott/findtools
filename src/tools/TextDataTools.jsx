@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ActionRow, InlineMessage, KeyValueList, ResultPanel, ToolInput } from "../components/common";
 import { ToolShell } from "../components/ToolShell";
 import { parseCsv, stringifyCsv } from "../lib/csv";
+import { countTextStats, csvToJsonText, extractEmailDomains, jsonToCsvText, removePunctuation, sentenceCase } from "../lib/toolLogic/textData";
 
 function textState(initialValue = "") {
   const [value, setValue] = useState(initialValue);
@@ -309,12 +310,12 @@ export function WordCounterTool({ tool, ...shellProps }) {
   const sample = "A calm workspace should stay out of your way while you work.";
   const state = textState(sample);
   const stats = useMemo(() => {
-    const words = state.value.trim() ? state.value.trim().split(/\s+/).length : 0;
+    const counts = countTextStats(state.value);
     return [
-      { label: "Words", value: String(words) },
-      { label: "Characters", value: String(state.value.length) },
-      { label: "Characters without spaces", value: String(state.value.replace(/\s/g, "").length) },
-      { label: "Lines", value: String(state.value ? state.value.split(/\r?\n/).length : 0) }
+      { label: "Words", value: String(counts.words) },
+      { label: "Characters", value: String(counts.characters) },
+      { label: "Characters without spaces", value: String(counts.charactersWithoutSpaces) },
+      { label: "Lines", value: String(counts.lines) }
     ];
   }, [state.value]);
   tool.copyValue = () => stats.map((item) => `${item.label}: ${item.value}`).join("\n");
@@ -656,8 +657,7 @@ export function CsvToJsonTool({ tool, ...shellProps }) {
   const state = textState("name,email,team\nAva,ava@example.com,Product\nBen,ben@example.com,Engineering");
   const output = useMemo(() => {
     try {
-      const [header = [], ...rows] = parseCsv(state.value);
-      return JSON.stringify(rows.map((row) => Object.fromEntries(header.map((key, index) => [key || `column_${index + 1}`, row[index] ?? ""]))), null, 2);
+      return csvToJsonText(state.value);
     } catch (error) {
       return `Invalid CSV: ${error.message}`;
     }
@@ -670,10 +670,7 @@ export function JsonToCsvTool({ tool, ...shellProps }) {
   const state = textState('[{"name":"Ava","team":"Product"},{"name":"Ben","team":"Engineering"}]');
   const output = useMemo(() => {
     try {
-      const value = JSON.parse(state.value);
-      const rows = Array.isArray(value) ? value : [value];
-      const headers = [...new Set(rows.flatMap((row) => Object.keys(row || {})))];
-      return stringifyCsv([headers, ...rows.map((row) => headers.map((header) => row?.[header] ?? ""))]);
+      return jsonToCsvText(state.value);
     } catch (error) {
       return `Invalid JSON: ${error.message}`;
     }
@@ -988,4 +985,55 @@ export function TextSuffixRemoverTool({ tool, ...shellProps }) {
   const output = useMemo(() => state.value.split(/\r?\n/).map((line) => line.endsWith(suffix) ? line.slice(0, -suffix.length) : line).join("\n"), [state.value, suffix]);
   tool.copyValue = () => output;
   return <ToolShell {...shellProps} tool={tool} instructions="Remove the same suffix from each line when present." inputArea={<><ToolInput label="Suffix"><input value={suffix} onChange={(e) => setSuffix(e.target.value)} /></ToolInput><ToolInput label="Line list"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function SentenceCaseConverterTool({ tool, ...shellProps }) {
+  const state = textState("hello world. THIS IS LOUD! new sentence?");
+  const output = useMemo(() => sentenceCase(state.value), [state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Convert text into sentence case." inputArea={<><ToolInput label="Text input"><textarea rows="12" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function RemovePunctuationTool({ tool, ...shellProps }) {
+  const state = textState("Hello, tools! Keep-it clean: please.");
+  const output = useMemo(() => removePunctuation(state.value), [state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove punctuation characters while keeping letters and numbers." inputArea={<><ToolInput label="Text input"><textarea rows="12" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function EmailDomainExtractorTool({ tool, ...shellProps }) {
+  const state = textState("ava@findtools.net\nben@example.com\nops@findtools.net");
+  const output = useMemo(() => extractEmailDomains(state.value).join("\n"), [state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Extract unique email domains from mixed text." inputArea={<><ToolInput label="Text input"><textarea rows="12" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} placeholder="Domains will appear here." />} />;
+}
+
+export function CsvRowCounterTool({ tool, ...shellProps }) {
+  const state = textState("name,email,team\nAva,ava@example.com,Product\nBen,ben@example.com,Engineering");
+  const items = useMemo(() => {
+    const rows = parseCsv(state.value);
+    return [
+      { label: "Total rows", value: String(rows.length) },
+      { label: "Data rows", value: String(Math.max(0, rows.length - 1)) },
+      { label: "Header columns", value: String(rows[0]?.length || 0) }
+    ];
+  }, [state.value]);
+  tool.copyValue = () => items.map((item) => `${item.label}: ${item.value}`).join("\n");
+  return <ToolShell {...shellProps} tool={tool} instructions="Count total CSV rows and data rows." inputArea={<><ToolInput label="CSV input"><textarea rows="12" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
+}
+
+export function LinePrefixRemoverTool({ tool, ...shellProps }) {
+  const state = textState("TODO: first\nTODO: second\nTODO: third");
+  const [prefix, setPrefix] = useState("TODO: ");
+  const output = useMemo(() => state.value.split(/\r?\n/).map((line) => line.startsWith(prefix) ? line.slice(prefix.length) : line).join("\n"), [prefix, state.value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove a matching prefix from each line." inputArea={<><ToolInput label="Prefix"><input value={prefix} onChange={(e) => setPrefix(e.target.value)} /></ToolInput><ToolInput label="Line list"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function LineSuffixRemoverTool({ tool, ...shellProps }) {
+  const state = textState("report-final\nsummary-final\nnotes-final");
+  const [suffix, setSuffix] = useState("-final");
+  const output = useMemo(() => state.value.split(/\r?\n/).map((line) => line.endsWith(suffix) ? line.slice(0, -suffix.length) : line).join("\n"), [state.value, suffix]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove a matching suffix from each line." inputArea={<><ToolInput label="Suffix"><input value={suffix} onChange={(e) => setSuffix(e.target.value)} /></ToolInput><ToolInput label="Line list"><textarea rows="10" value={state.value} onChange={(e) => state.setValue(e.target.value)} /></ToolInput>{baseActions({ clear: state.clear, reset: state.reset })}</>} outputArea={<ResultPanel value={output} />} />;
 }

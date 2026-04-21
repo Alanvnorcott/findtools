@@ -209,3 +209,39 @@ export function SquareFeetToAcresTool({ tool, ...shellProps }) {
   const output = useMemo(() => `${(Number(value) / 43560).toFixed(4)} acres`, [value]);
   return baseTool(tool, shellProps, "Convert square feet to acres.", <ToolInput label="Square feet"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
 }
+
+export function SquareMetersToSquareFeetTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("10");
+  const output = useMemo(() => `${(Number(value) * 10.7639).toFixed(3)} sq ft`, [value]);
+  return baseTool(tool, shellProps, "Convert square meters to square feet.", <ToolInput label="Square meters"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function SquareFeetToSquareMetersTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("107.639");
+  const output = useMemo(() => `${(Number(value) / 10.7639).toFixed(3)} sq m`, [value]);
+  return baseTool(tool, shellProps, "Convert square feet to square meters.", <ToolInput label="Square feet"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function OuncesToGramsTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("16");
+  const output = useMemo(() => `${(Number(value) * 28.3495).toFixed(3)} g`, [value]);
+  return baseTool(tool, shellProps, "Convert ounces to grams.", <ToolInput label="Ounces"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function GramsToOuncesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("454");
+  const output = useMemo(() => `${(Number(value) / 28.3495).toFixed(3)} oz`, [value]);
+  return baseTool(tool, shellProps, "Convert grams to ounces.", <ToolInput label="Grams"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function CupsToMillilitersTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("2");
+  const output = useMemo(() => `${(Number(value) * 236.588).toFixed(2)} mL`, [value]);
+  return baseTool(tool, shellProps, "Convert US cups to milliliters.", <ToolInput label="Cups"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}
+
+export function MillilitersToCupsTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("473");
+  const output = useMemo(() => `${(Number(value) / 236.588).toFixed(3)} cups`, [value]);
+  return baseTool(tool, shellProps, "Convert milliliters to US cups.", <ToolInput label="Milliliters"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+}

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import { ActionRow, KeyValueList, ResultPanel, ToolInput } from "../components/common";
 import { ToolShell } from "../components/ToolShell";
+import { parsePageRange } from "../lib/toolLogic/fileTools";
 import { bytesToSize, downloadBlob } from "../lib/utils";
 
 async function readFileAsBytes(file) {
@@ -37,19 +38,6 @@ async function canvasBlobFromFile(file, type, quality, width, height, crop) {
   return blob;
 }
 
-function parseRange(range, pageCount) {
-  const pages = new Set();
-  range.split(",").forEach((part) => {
-    const [start, end] = part.split("-").map((item) => Number(item.trim()));
-    if (Number.isFinite(start) && Number.isFinite(end)) {
-      for (let page = start; page <= end; page += 1) pages.add(page - 1);
-    } else if (Number.isFinite(start)) {
-      pages.add(start - 1);
-    }
-  });
-  return [...pages].filter((page) => page >= 0 && page < pageCount);
-}
-
 export function PdfMergeTool({ tool, ...shellProps }) {
   const [files, setFiles] = useState([]);
   const [status, setStatus] = useState("Select two or more PDF files.");
@@ -78,7 +66,7 @@ export function PdfSplitTool({ tool, ...shellProps }) {
     if (!file) return setStatus("Choose a PDF file first.");
     const source = await PDFDocument.load(await readFileAsBytes(file));
     const output = await PDFDocument.create();
-    const pages = parseRange(range, source.getPageCount());
+    const pages = parsePageRange(range, source.getPageCount());
     const copied = await output.copyPages(source, pages);
     copied.forEach((page) => output.addPage(page));
     const bytes = await output.save();

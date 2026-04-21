@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { toolRegistry } from "../data/toolRegistry";
 import { AdSlot } from "./AdSlot";
-import { CopyButton, InlineMessage, SectionCard, ToolList } from "./common";
+import { CopyButton, SectionCard, ToolList } from "./common";
 
 export function ToolShell({
   tool,
@@ -61,7 +61,7 @@ export function ToolShell({
           {tool.aliases?.length ? <span className="chip">Canonical tool</span> : null}
         </div>
 
-        <InlineMessage tone="success">{tool.trustNote || trustMessage}</InlineMessage>
+        <p className="tool-trust-note">{tool.trustNote || trustMessage}</p>
 
         {/* AD_SLOT: TOOL_TOP */}
         <AdSlot placement="TOOL_TOP" />

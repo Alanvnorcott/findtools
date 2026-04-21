@@ -166,3 +166,50 @@ export function NumberLinesWithoutBlankLinesTool({ tool, ...shellProps }) {
   tool.copyValue = () => output;
   return <ToolShell {...shellProps} tool={tool} instructions="Add numbers to non-empty lines while leaving blank lines untouched." inputArea={<ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output} />} />;
 }
+
+export function IndentLinesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("alpha\nbravo\ncharlie");
+  const [spaces, setSpaces] = useState("2");
+  const output = useMemo(() => value.split(/\r?\n/).map((line) => `${" ".repeat(Math.max(0, Number(spaces) || 0))}${line}`).join("\n"), [spaces, value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Add the same left indentation to every line." inputArea={<><ToolInput label="Spaces"><input value={spaces} onChange={(e) => setSpaces(e.target.value)} /></ToolInput><ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput></>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function UnindentLinesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("    alpha\n    bravo\n      charlie");
+  const [spaces, setSpaces] = useState("2");
+  const output = useMemo(() => {
+    const count = Math.max(0, Number(spaces) || 0);
+    return value.split(/\r?\n/).map((line) => line.replace(new RegExp(`^ {0,${count}}`), "")).join("\n");
+  }, [spaces, value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove a chosen amount of leading spaces from each line." inputArea={<><ToolInput label="Spaces to remove"><input value={spaces} onChange={(e) => setSpaces(e.target.value)} /></ToolInput><ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput></>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function RemoveSurroundingQuotesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState('"alpha"\n"bravo"\n"charlie"');
+  const output = useMemo(() => value.split(/\r?\n/).map((line) => line.replace(/^['"]|['"]$/g, "")).join("\n"), [value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove one layer of wrapping single or double quotes from each line." inputArea={<ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function CondenseBlankLinesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("alpha\n\n\nbravo\n\n\n\ncharlie");
+  const output = useMemo(() => value.replace(/\n{3,}/g, "\n\n"), [value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Reduce large blank gaps down to single blank lines." inputArea={<ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function LeftTrimLinesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("  alpha\n bravo\n    charlie");
+  const output = useMemo(() => value.split(/\r?\n/).map((line) => line.replace(/^\s+/, "")).join("\n"), [value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove leading whitespace from each line only." inputArea={<ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output} />} />;
+}
+
+export function RightTrimLinesTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState("alpha  \nbravo \ncharlie   ");
+  const output = useMemo(() => value.split(/\r?\n/).map((line) => line.replace(/\s+$/, "")).join("\n"), [value]);
+  tool.copyValue = () => output;
+  return <ToolShell {...shellProps} tool={tool} instructions="Remove trailing whitespace from each line only." inputArea={<ToolInput label="Text input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel value={output} />} />;
+}

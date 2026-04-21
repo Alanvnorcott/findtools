@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActionRow, InlineMessage, KeyValueList, ResultPanel, ToolInput } from "../components/common";
 import { ToolShell } from "../components/ToolShell";
+import { readJsonPath, transformBase64 } from "../lib/toolLogic/dev";
 
 async function digest(value, algorithm) {
   const encoded = new TextEncoder().encode(value);
@@ -25,13 +26,7 @@ function miniTool(tool, shellProps, instructions, inputArea, output, validation)
 export function Base64Tool({ tool, ...shellProps }) {
   const [value, setValue] = useState("Findtools keeps everything in the browser.");
   const [mode, setMode] = useState("encode");
-  const result = useMemo(() => {
-    try {
-      return mode === "encode" ? btoa(unescape(encodeURIComponent(value))) : decodeURIComponent(escape(atob(value)));
-    } catch {
-      return "Invalid Base64 input.";
-    }
-  }, [mode, value]);
+  const result = useMemo(() => transformBase64(value, mode), [mode, value]);
   return miniTool(
     tool,
     shellProps,
@@ -299,15 +294,6 @@ export function MimeTypeLookupTool({ tool, ...shellProps }) {
   }, [value]);
   tool.copyValue = () => items.map((item) => `${item.label}: ${item.value}`).join("\n");
   return <ToolShell {...shellProps} tool={tool} instructions="Look up a common MIME type from a file extension." validation={!items.length ? <InlineMessage tone="warning">Enter a known extension like png, pdf, json, or csv.</InlineMessage> : null} inputArea={<ToolInput label="Extension"><input value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
-}
-
-function readJsonPath(input, path) {
-  const tokens = path
-    .replace(/\[(\d+)\]/g, ".$1")
-    .split(".")
-    .map((token) => token.trim())
-    .filter(Boolean);
-  return tokens.reduce((current, token) => (current == null ? undefined : current[token]), input);
 }
 
 function parseSimpleYaml(input) {

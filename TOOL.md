@@ -229,7 +229,32 @@ Suggested structure:
 - page component
 - tests if included
 
+Recommended test structure:
+- move main logic into `src/lib/toolLogic/<category>.js` when practical
+- add `src/lib/toolLogic/<category>.test.js`
+- keep the test baseline small:
+  - valid path
+  - one important edge case
+  - invalid handling if applicable
+
 Keep tool logic isolated from presentation where possible.
+
+## Unit test baseline
+
+Each new tool should be able to add a very small unit test without mounting React.
+
+Preferred pattern:
+1. extract the main deterministic logic into a pure function
+2. test that pure function with 2-3 focused assertions
+3. leave UI rendering to the shared shell unless the tool has unusual rendering logic
+
+Testing is expected for new tools by default.
+
+Skip tests only when the tool is clearly very low-tier / low-demand, extremely trivial, and not worth ongoing maintenance overhead.
+If you skip tests, that should be a deliberate judgment call, not the default path.
+
+Do not import test code into runtime modules.
+Do not add testing helpers to the production entry path.
 
 ## Goal statement requirement
 
@@ -251,4 +276,5 @@ A tool is done when:
 4. it is easy to understand immediately
 5. it has metadata and category assignment
 6. it supports the expected utility actions
-7. it does not visually or architecturally drift from the rest of the site
+7. it has a small unit test unless it was deliberately treated as low-tier / low-demand
+8. it does not visually or architecturally drift from the rest of the site

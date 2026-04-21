@@ -458,6 +458,14 @@ p {
   color: var(--error);
 }
 
+.tool-trust-note {
+  margin: 0 0 var(--space-3);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
 .content-list {
   margin: 0;
   padding-left: 1.1rem;
