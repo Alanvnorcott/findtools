@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { categories } from "../data/categories";
+import { ConsentBanner } from "./ConsentBanner";
 import { SearchDialog } from "./SearchDialog";
 import { SiteFooter } from "./SiteFooter";
 
@@ -54,6 +55,7 @@ export function AppShell({ children }) {
         </div>
       </header>
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <ConsentBanner />
       <main className="page">{children}</main>
       <SiteFooter />
     </div>
