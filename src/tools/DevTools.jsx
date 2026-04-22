@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActionRow, InlineMessage, KeyValueList, ResultPanel, ToolInput } from "../components/common";
+import { CodeField, CodeResultPanel } from "../components/CodeEditor";
 import { ToolShell } from "../components/ToolShell";
 import { readJsonPath, transformBase64 } from "../lib/toolLogic/dev";
 
@@ -105,7 +106,16 @@ export function JwtDecoderTool({ tool, ...shellProps }) {
       return { ok: false, text: "Enter a valid JWT to decode header and payload." };
     }
   }, [token]);
-  return miniTool(tool, shellProps, "Decode JWT header and payload locally. Signature verification is not performed.", <><ToolInput label="JWT token"><textarea rows="12" value={token} onChange={(e) => setToken(e.target.value)} /></ToolInput><ActionRow><button className="button button--secondary" onClick={() => setToken("")} type="button">Clear</button></ActionRow></>, decoded.text, <InlineMessage tone={decoded.ok ? "success" : "warning"}>{decoded.ok ? "Decoded locally." : "Waiting for a valid token."}</InlineMessage>);
+  return (
+    <ToolShell
+      {...shellProps}
+      tool={tool}
+      instructions="Decode JWT header and payload locally. Signature verification is not performed."
+      validation={<InlineMessage tone={decoded.ok ? "success" : "warning"}>{decoded.ok ? "Decoded locally." : "Waiting for a valid token."}</InlineMessage>}
+      inputArea={<><CodeField label="JWT token" language="markdown" minHeight={240} onChange={setToken} value={token} /><ActionRow><button className="button button--secondary" onClick={() => setToken("")} type="button">Clear</button></ActionRow></>}
+      outputArea={<CodeResultPanel language="json" title="Decoded token" value={decoded.text} />}
+    />
+  );
 }
 
 export function TimestampConverterTool({ tool, ...shellProps }) {
@@ -142,19 +152,19 @@ export function HashGeneratorTool({ tool, ...shellProps }) {
 export function HtmlMinifierTool({ tool, ...shellProps }) {
   const [value, setValue] = useState("<div>\n  <span> Quiet tools </span>\n</div>");
   const output = useMemo(() => value.replace(/>\s+</g, "><").replace(/\s{2,}/g, " ").trim(), [value]);
-  return miniTool(tool, shellProps, "Minify basic HTML by collapsing whitespace.", <><ToolInput label="HTML input"><textarea rows="14" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput><ActionRow><button className="button button--secondary" onClick={() => setValue("")} type="button">Clear</button></ActionRow></>, output);
+  return miniTool(tool, shellProps, "Minify basic HTML by collapsing whitespace.", <><CodeField label="HTML input" language="html" minHeight={280} onChange={setValue} value={value} /><ActionRow><button className="button button--secondary" onClick={() => setValue("")} type="button">Clear</button></ActionRow></>, <CodeResultPanel language="html" value={output} />);
 }
 
 export function CssMinifierTool({ tool, ...shellProps }) {
   const [value, setValue] = useState(".card {\n  padding: 12px;\n  border: 1px solid #ccc;\n}");
   const output = useMemo(() => value.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s+/g, " ").replace(/\s*([{}:;,])\s*/g, "$1").trim(), [value]);
-  return miniTool(tool, shellProps, "Minify basic CSS by removing comments and extra whitespace.", <ToolInput label="CSS input"><textarea rows="14" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Minify basic CSS by removing comments and extra whitespace.", <CodeField label="CSS input" language="css" minHeight={280} onChange={setValue} value={value} />, <CodeResultPanel language="css" value={output} />);
 }
 
 export function JsMinifierTool({ tool, ...shellProps }) {
   const [value, setValue] = useState("function add(a, b) {\n  // demo\n  return a + b;\n}");
   const output = useMemo(() => value.replace(/\/\/.*$/gm, "").replace(/\s+/g, " ").trim(), [value]);
-  return miniTool(tool, shellProps, "Minify basic JavaScript by stripping line comments and repeated whitespace.", <ToolInput label="JavaScript input"><textarea rows="14" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Minify basic JavaScript by stripping line comments and repeated whitespace.", <CodeField label="JavaScript input" language="javascript" minHeight={280} onChange={setValue} value={value} />, <CodeResultPanel language="javascript" value={output} />);
 }
 
 export function HexToRgbTool({ tool, ...shellProps }) {
@@ -376,7 +386,7 @@ export function JsonPathTesterTool({ tool, ...shellProps }) {
       return `Invalid JSON: ${error.message}`;
     }
   }, [json, path]);
-  return miniTool(tool, shellProps, "Test a dot/bracket JSON path against a JSON document.", <><ToolInput label="JSON path"><input value={path} onChange={(e) => setPath(e.target.value)} /></ToolInput><ToolInput label="JSON input"><textarea rows="14" value={json} onChange={(e) => setJson(e.target.value)} /></ToolInput></>, output);
+  return miniTool(tool, shellProps, "Test a dot/bracket JSON path against a JSON document.", <><ToolInput label="JSON path"><input value={path} onChange={(e) => setPath(e.target.value)} /></ToolInput><CodeField label="JSON input" language="json" minHeight={280} onChange={setJson} value={json} /></>, <CodeResultPanel language="json" value={output} />);
 }
 
 export function YamlFormatterTool({ tool, ...shellProps }) {
@@ -388,7 +398,7 @@ export function YamlFormatterTool({ tool, ...shellProps }) {
       return `Invalid YAML: ${error.message}`;
     }
   }, [value]);
-  return miniTool(tool, shellProps, "Format simple YAML using a browser-only parser.", <ToolInput label="YAML input"><textarea rows="14" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Format simple YAML using a browser-only parser.", <CodeField label="YAML input" language="yaml" minHeight={280} onChange={setValue} value={value} />, <CodeResultPanel language="yaml" value={output} />);
 }
 
 export function YamlToJsonTool({ tool, ...shellProps }) {
@@ -400,7 +410,7 @@ export function YamlToJsonTool({ tool, ...shellProps }) {
       return `Invalid YAML: ${error.message}`;
     }
   }, [value]);
-  return miniTool(tool, shellProps, "Convert simple YAML into JSON.", <ToolInput label="YAML input"><textarea rows="14" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Convert simple YAML into JSON.", <CodeField label="YAML input" language="yaml" minHeight={280} onChange={setValue} value={value} />, <CodeResultPanel language="json" value={output} />);
 }
 
 export function JsonToYamlTool({ tool, ...shellProps }) {
@@ -412,13 +422,13 @@ export function JsonToYamlTool({ tool, ...shellProps }) {
       return `Invalid JSON: ${error.message}`;
     }
   }, [value]);
-  return miniTool(tool, shellProps, "Convert JSON into simple YAML.", <ToolInput label="JSON input"><textarea rows="14" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Convert JSON into simple YAML.", <CodeField label="JSON input" language="json" minHeight={280} onChange={setValue} value={value} />, <CodeResultPanel language="yaml" value={output} />);
 }
 
 export function XmlFormatterTool({ tool, ...shellProps }) {
   const [value, setValue] = useState("<root><item>alpha</item><item>bravo</item></root>");
   const output = useMemo(() => formatXmlText(value), [value]);
-  return miniTool(tool, shellProps, "Format XML with indentation.", <ToolInput label="XML input"><textarea rows="14" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Format XML with indentation.", <CodeField label="XML input" language="xml" minHeight={280} onChange={setValue} value={value} />, <CodeResultPanel language="xml" value={output} />);
 }
 
 export function XmlToJsonTool({ tool, ...shellProps }) {
@@ -432,19 +442,19 @@ export function XmlToJsonTool({ tool, ...shellProps }) {
       return `Invalid XML: ${error.message}`;
     }
   }, [value]);
-  return miniTool(tool, shellProps, "Convert XML into a simple JSON object.", <ToolInput label="XML input"><textarea rows="14" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Convert XML into a simple JSON object.", <CodeField label="XML input" language="xml" minHeight={280} onChange={setValue} value={value} />, <CodeResultPanel language="json" value={output} />);
 }
 
 export function SqlFormatterTool({ tool, ...shellProps }) {
   const [value, setValue] = useState("select id, name from users where active = 1 order by name");
   const output = useMemo(() => formatSqlText(value), [value]);
-  return miniTool(tool, shellProps, "Format common SQL keywords onto separate lines.", <ToolInput label="SQL input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Format common SQL keywords onto separate lines.", <CodeField label="SQL input" language="sql" minHeight={240} onChange={setValue} value={value} />, <CodeResultPanel language="sql" value={output} />);
 }
 
 export function SqlMinifierTool({ tool, ...shellProps }) {
   const [value, setValue] = useState("SELECT id, name\nFROM users\nWHERE active = 1\nORDER BY name");
   const output = useMemo(() => value.replace(/\s+/g, " ").trim(), [value]);
-  return miniTool(tool, shellProps, "Minify SQL by collapsing whitespace.", <ToolInput label="SQL input"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>, output);
+  return miniTool(tool, shellProps, "Minify SQL by collapsing whitespace.", <CodeField label="SQL input" language="sql" minHeight={240} onChange={setValue} value={value} />, <CodeResultPanel language="sql" value={output} />);
 }
 
 export function CronExpressionParserTool({ tool, ...shellProps }) {
@@ -506,7 +516,7 @@ export function CurlParserTool({ tool, ...shellProps }) {
     return [{ label: "Method", value: method }, { label: "URL", value: url || "-" }, { label: "Headers", value: headers || "-" }, { label: "Body", value: body || "-" }];
   }, [value]);
   tool.copyValue = () => items.map((item) => `${item.label}: ${item.value}`).join("\n");
-  return <ToolShell {...shellProps} tool={tool} instructions="Parse a simple cURL command into readable fields." inputArea={<ToolInput label="cURL command"><textarea rows="10" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
+  return <ToolShell {...shellProps} tool={tool} instructions="Parse a simple cURL command into readable fields." inputArea={<CodeField label="cURL command" language="bash" minHeight={220} onChange={setValue} value={value} />} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
 }
 
 export function EnvFileParserTool({ tool, ...shellProps }) {
@@ -516,7 +526,7 @@ export function EnvFileParserTool({ tool, ...shellProps }) {
     return { label: label.trim(), value: rest.join("=").trim() };
   }), [value]);
   tool.copyValue = () => items.map((item) => `${item.label}: ${item.value}`).join("\n");
-  return <ToolShell {...shellProps} tool={tool} instructions="Parse a .env file into key-value pairs." inputArea={<ToolInput label=".env content"><textarea rows="12" value={value} onChange={(e) => setValue(e.target.value)} /></ToolInput>} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
+  return <ToolShell {...shellProps} tool={tool} instructions="Parse a .env file into key-value pairs." inputArea={<CodeField label=".env content" language="bash" minHeight={240} onChange={setValue} value={value} />} outputArea={<ResultPanel><KeyValueList items={items} /></ResultPanel>} />;
 }
 
 export function GitignoreGeneratorTool({ tool, ...shellProps }) {

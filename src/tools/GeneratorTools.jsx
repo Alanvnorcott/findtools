@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { ActionRow, KeyValueList, ResultPanel, ToolInput } from "../components/common";
+import { CodeField, CodeResultPanel } from "../components/CodeEditor";
 import { ToolShell } from "../components/ToolShell";
 import {
   contrastRatio,
@@ -326,9 +327,14 @@ export function LanguageCommentGeneratorTool({ tool, ...shellProps }) {
       instructions={`Type or paste multiple lines for ${tool.languageName}. Press Enter to keep adding lines and copy the generated comment block when it looks right.`}
       inputArea={
         <>
-          <ToolInput label={`${tool.languageName} comment text`} hint="Multi-line input is supported. Blank lines are preserved.">
-            <textarea rows="12" value={value} onChange={(event) => setValue(event.target.value)} />
-          </ToolInput>
+          <CodeField
+            hint="Multi-line input is supported. Blank lines are preserved."
+            label={`${tool.languageName} comment text`}
+            language={tool.commentEditorLanguage || "markdown"}
+            minHeight={260}
+            onChange={setValue}
+            value={value}
+          />
           <ActionRow>
             <button
               className="button button--secondary"
@@ -340,7 +346,7 @@ export function LanguageCommentGeneratorTool({ tool, ...shellProps }) {
           </ActionRow>
         </>
       }
-      outputArea={<ResultPanel value={output} />}
+      outputArea={<CodeResultPanel language={tool.commentEditorLanguage || "markdown"} value={output} />}
       extra={extra}
     />
   );

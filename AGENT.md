@@ -169,6 +169,30 @@ Use the shared `codingLanguageEngine` instead:
 If a new high-value language variant page is needed, add a registry entry or generated variant that preselects the language.
 Do not fork the logic into a new component just to support one language-specific page.
 
+## Code Editor Rule
+
+If a tool meaningfully edits, formats, validates, generates, or displays code, config, markup, queries, or command text, use the shared highlighted code editor surface instead of a plain textarea whenever practical.
+
+Use:
+- the shared `CodeEditor` components for code input/output
+- the shared language mapping rather than per-tool syntax setup
+- lazy loading so code editor dependencies do not affect non-code tools
+
+Do not introduce Monaco for ordinary code fields.
+Use lightweight shared editor infrastructure by default.
+
+## IDE Rule
+
+IDE-style pages are a special case.
+
+They must:
+- use the shared `ideEngine`
+- lazy-load their editor/runtime assets
+- avoid increasing the main app bundle for non-IDE users
+- keep drafts local in browser storage only
+
+If a browser-side runtime is not realistic for a language, support editing/highlighting/export cleanly rather than faking execution.
+
 ## SEO System Requirement
 
 Findtools is not just a UI catalog.
@@ -234,6 +258,15 @@ Prioritize:
 ## Test Expectation
 
 New deterministic logic should ship with a small unit test by default.
+
+The baseline test mix should now include:
+- pure logic tests for the main deterministic behavior
+- registry validation for slug and alias uniqueness when touching shared metadata
+- lightweight jsdom render smoke tests for app startup and any unusual UI surface
+- crash-boundary coverage so startup failures do not collapse into a blank page
+
+If a change can break first render, routing, or a high-value shared component, add or update a UI smoke test.
+Do not skip this for shared shells, routing, editor systems, registry systems, or IDE pages.
 
 Preferred pattern:
 - put shared coding logic in `src/lib/codingLanguageEngine.js` or `src/lib/toolLogic/*.js`

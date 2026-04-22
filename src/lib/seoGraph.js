@@ -16,6 +16,7 @@ export function toSlug(value) {
 
 function splitIntent(primaryKeyword) {
   const keyword = String(primaryKeyword ?? "").toLowerCase();
+  if (keyword.includes(" ide")) return { subject: keyword.replace(/\s+ide.*$/, ""), type: "ide" };
   if (keyword.includes(" calculator")) return { subject: keyword.replace(/ calculator$/, ""), type: "calculator" };
   if (keyword.includes(" converter")) return { subject: keyword.replace(/ converter$/, ""), type: "converter" };
   if (keyword.includes(" formatter")) return { subject: keyword.replace(/ formatter$/, ""), type: "formatter" };
@@ -76,6 +77,8 @@ function genericVariants(primaryKeyword) {
 
   if (type === "calculator") {
     variants.push(`${subject} calculator online`, `${subject} calculator free`, `${subject} formula calculator`);
+  } else if (type === "ide") {
+    variants.push(`online ${subject} ide`, `${subject} ide online`, `${subject} browser ide`, `${subject} code editor online`, `${subject} playground online`);
   } else if (type === "converter") {
     variants.push(`${subject} converter online`, `${subject} conversion calculator`);
     const inverse = invertConverterSubject(subject);

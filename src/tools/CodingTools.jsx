@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ActionRow, InlineMessage, KeyValueList, ResultPanel, ToolInput } from "../components/common";
+import { CodeField, CodeResultPanel } from "../components/CodeEditor";
 import { ToolShell } from "../components/ToolShell";
 import { codingLanguageEngine, getSupportedLanguages } from "../lib/codingLanguageEngine";
 import {
@@ -35,8 +36,8 @@ function simpleTool(tool, shellProps, instructions, inputArea, outputArea, valid
   );
 }
 
-function ResultText({ value, title }) {
-  return <ResultPanel title={title} value={value} />;
+function ResultText({ value, title, language }) {
+  return language ? <CodeResultPanel language={language} title={title} value={value} /> : <ResultPanel title={title} value={value} />;
 }
 
 export function LanguageEngineTool({ tool, ...shellProps }) {
@@ -77,16 +78,14 @@ export function LanguageEngineTool({ tool, ...shellProps }) {
           </select>
         </ToolInput>
       ) : null}
-      <ToolInput label="Code input">
-        <textarea rows="16" value={value} onChange={(event) => setValue(event.target.value)} />
-      </ToolInput>
+      <CodeField label="Code input" language={language} minHeight={320} onChange={setValue} value={value} />
       <ActionRow>
         <button className="button button--secondary" onClick={() => setValue(tool.sampleInput || "")} type="button">
           Reset
         </button>
       </ActionRow>
     </>,
-    <ResultText title={capability === "validate" ? "Validation result" : "Output"} value={output} />,
+    <ResultText language={capability === "validate" ? "markdown" : language} title={capability === "validate" ? "Validation result" : "Output"} value={output} />,
     validation
   );
 }
@@ -100,8 +99,8 @@ export function JsonModelGeneratorTool({ tool, ...shellProps }) {
     tool,
     shellProps,
     `Generate a ${codingLanguageEngine.registry[language]?.label || language} model from JSON.`,
-    <ToolInput label="JSON input"><textarea rows="16" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>,
-    <ResultText value={output} />
+    <CodeField label="JSON input" language="json" minHeight={320} onChange={setValue} value={value} />,
+    <ResultText language={language} value={output} />
   );
 }
 
@@ -121,9 +120,9 @@ export function SqlToOrmConverterTool({ tool, ...shellProps }) {
           <option value="sqlalchemy">SQLAlchemy</option>
         </select>
       </ToolInput>
-      <ToolInput label="SQL schema"><textarea rows="14" value={schema} onChange={(event) => setSchema(event.target.value)} /></ToolInput>
+      <CodeField label="SQL schema" language="sql" minHeight={280} onChange={setSchema} value={schema} />
     </>,
-    <ResultText value={output} />
+    <ResultText language={target === "sqlalchemy" ? "python" : "javascript"} value={output} />
   );
 }
 
@@ -153,7 +152,7 @@ export function GitCommandGeneratorTool({ tool, ...shellProps }) {
         <ToolInput label="Message"><input value={message} onChange={(event) => setMessage(event.target.value)} /></ToolInput>
       </div>
     </>,
-    <ResultText value={output} />
+    <ResultText language="bash" value={output} />
   );
 }
 
@@ -185,7 +184,7 @@ export function DockerfileGeneratorTool({ tool, ...shellProps }) {
       </div>
       <ToolInput label="Entrypoint"><input value={entrypoint} onChange={(event) => setEntrypoint(event.target.value)} /></ToolInput>
     </>,
-    <ResultText value={output} />
+    <ResultText language="dockerfile" value={output} />
   );
 }
 
@@ -217,7 +216,7 @@ export function CicdYamlGeneratorTool({ tool, ...shellProps }) {
       </div>
       <ToolInput label="Run command"><input value={command} onChange={(event) => setCommand(event.target.value)} /></ToolInput>
     </>,
-    <ResultText value={output} />
+    <ResultText language="yaml" value={output} />
   );
 }
 
@@ -229,8 +228,10 @@ export function EnvFileValidatorTool({ tool, ...shellProps }) {
     tool,
     shellProps,
     "Validate a .env file for duplicate keys and invalid names.",
-    <ToolInput label=".env content"><textarea rows="14" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>,
-    <ResultPanel>{result.valid ? <KeyValueList items={result.items.map((item) => ({ label: item.key, value: item.value }))} /> : <pre>{result.errors.join("\n")}</pre>}</ResultPanel>,
+    <CodeField label=".env content" language="bash" minHeight={280} onChange={setValue} value={value} />,
+    result.valid
+      ? <ResultPanel><KeyValueList items={result.items.map((item) => ({ label: item.key, value: item.value }))} /></ResultPanel>
+      : <CodeResultPanel language="markdown" title="Validation errors" value={result.errors.join("\n")} />,
     <InlineMessage tone={result.valid ? "success" : "warning"}>{result.valid ? "Environment file looks valid." : "Validation issues were found."}</InlineMessage>
   );
 }
@@ -243,7 +244,7 @@ export function StackTraceFormatterTool({ tool, ...shellProps }) {
     tool,
     shellProps,
     "Parse a stack trace into a cleaner structured view.",
-    <ToolInput label="Stack trace"><textarea rows="14" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>,
+    <CodeField label="Stack trace" language="markdown" minHeight={280} onChange={setValue} value={value} />,
     <ResultPanel><KeyValueList items={items.flatMap((item) => [{ label: `Frame ${item.frame}`, value: `${item.functionName} — ${item.file}:${item.line}:${item.column}` }])} /></ResultPanel>
   );
 }
@@ -256,8 +257,8 @@ export function LogPrettifierTool({ tool, ...shellProps }) {
     tool,
     shellProps,
     "Prettify JSON or key-value logs into readable blocks.",
-    <ToolInput label="Log input"><textarea rows="14" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>,
-    <ResultText value={output} />
+    <CodeField label="Log input" language="json" minHeight={280} onChange={setValue} value={value} />,
+    <ResultText language="json" value={output} />
   );
 }
 
@@ -269,7 +270,7 @@ export function TimeComplexityEstimatorTool({ tool, ...shellProps }) {
     tool,
     shellProps,
     "Estimate time complexity heuristically from loop and recursion patterns.",
-    <ToolInput label="Code or pseudocode"><textarea rows="14" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>,
+    <CodeField label="Code or pseudocode" language="python" minHeight={280} onChange={setValue} value={value} />,
     <ResultPanel><KeyValueList items={[{ label: "Estimated complexity", value: result.complexity }, { label: "Reason", value: result.reason }]} /></ResultPanel>
   );
 }
@@ -333,12 +334,12 @@ export function CodeSnippetRunnerTool({ tool, ...shellProps }) {
     shellProps,
     "Run a small JavaScript snippet inside a browser worker sandbox.",
     <>
-      <ToolInput label="JavaScript snippet"><textarea rows="16" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>
+      <CodeField label="JavaScript snippet" language="javascript" minHeight={320} onChange={setValue} value={value} />
       <ActionRow>
         <button className="button" onClick={runSnippet} type="button">Run snippet</button>
       </ActionRow>
     </>,
-    <ResultText value={output} />,
+    <ResultText language="markdown" value={output} />,
     <InlineMessage tone={status === "error" ? "warning" : status === "success" ? "success" : "neutral"}>
       {status === "running" ? "Running in a local worker…" : "Execution stays in your browser."}
     </InlineMessage>
@@ -362,9 +363,9 @@ export function PseudocodeToCodeGeneratorTool({ tool, ...shellProps }) {
           <option value="python">Python</option>
         </select>
       </ToolInput>
-      <ToolInput label="Pseudocode"><textarea rows="14" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>
+      <CodeField label="Pseudocode" language="markdown" minHeight={280} onChange={setValue} value={value} />
     </>,
-    <ResultText value={output} />
+    <ResultText language={language} value={output} />
   );
 }
 
@@ -376,8 +377,8 @@ export function CodeExplanationTool({ tool, ...shellProps }) {
     tool,
     shellProps,
     "Generate a concise structural explanation of a code snippet.",
-    <ToolInput label="Code input"><textarea rows="16" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>,
-    <ResultText value={output} />
+    <CodeField label="Code input" language="javascript" minHeight={320} onChange={setValue} value={value} />,
+    <ResultText language="markdown" value={output} />
   );
 }
 
@@ -397,10 +398,10 @@ export function ApiRequestBuilderTool({ tool, ...shellProps }) {
         <ToolInput label="Method"><input value={method} onChange={(event) => setMethod(event.target.value)} /></ToolInput>
         <ToolInput label="URL"><input value={url} onChange={(event) => setUrl(event.target.value)} /></ToolInput>
       </div>
-      <ToolInput label="Headers"><textarea rows="6" value={headers} onChange={(event) => setHeaders(event.target.value)} /></ToolInput>
-      <ToolInput label="Body"><textarea rows="8" value={body} onChange={(event) => setBody(event.target.value)} /></ToolInput>
+      <CodeField label="Headers" language="markdown" minHeight={160} onChange={setHeaders} value={headers} />
+      <CodeField label="Body" language="json" minHeight={180} onChange={setBody} value={body} />
     </>,
-    <ResultPanel><div className="stack-sm"><pre>{preview.requestSummary}</pre><pre>{preview.curl}</pre><pre>{preview.fetch}</pre></div></ResultPanel>
+    <ResultPanel><div className="stack-sm"><pre>{preview.requestSummary}</pre><CodeResultPanel language="bash" title="cURL" value={preview.curl} /><CodeResultPanel language="javascript" title="fetch()" value={preview.fetch} /></div></ResultPanel>
   );
 }
 
@@ -421,9 +422,9 @@ export function OpenApiGeneratorTool({ tool, ...shellProps }) {
         <ToolInput label="Version"><input value={version} onChange={(event) => setVersion(event.target.value)} /></ToolInput>
       </div>
       <ToolInput label="Base URL"><input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} /></ToolInput>
-      <ToolInput label="Endpoints"><textarea rows="10" value={endpoints} onChange={(event) => setEndpoints(event.target.value)} /></ToolInput>
+      <CodeField label="Endpoints" language="markdown" minHeight={220} onChange={setEndpoints} value={endpoints} />
     </>,
-    <ResultText value={output} />
+    <ResultText language="yaml" value={output} />
   );
 }
 
@@ -446,9 +447,9 @@ export function ReadmeGeneratorTool({ tool, ...shellProps }) {
         <ToolInput label="Install command"><input value={install} onChange={(event) => setInstall(event.target.value)} /></ToolInput>
         <ToolInput label="Usage command"><input value={usage} onChange={(event) => setUsage(event.target.value)} /></ToolInput>
       </div>
-      <ToolInput label="Feature bullets"><textarea rows="6" value={features} onChange={(event) => setFeatures(event.target.value)} /></ToolInput>
+      <CodeField label="Feature bullets" language="markdown" minHeight={160} onChange={setFeatures} value={features} />
     </>,
-    <ResultText value={output} />
+    <ResultText language="markdown" value={output} />
   );
 }
 
@@ -460,8 +461,8 @@ export function DependencyGraphVisualizerTool({ tool, ...shellProps }) {
     tool,
     shellProps,
     "Generate a Mermaid dependency graph from one edge per line.",
-    <ToolInput label="Dependency edges"><textarea rows="12" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>,
-    <ResultText title="Mermaid graph" value={output} />
+    <CodeField label="Dependency edges" language="markdown" minHeight={220} onChange={setValue} value={value} />,
+    <ResultText language="markdown" title="Mermaid graph" value={output} />
   );
 }
 
@@ -473,8 +474,8 @@ export function ArchitectureDiagramGeneratorTool({ tool, ...shellProps }) {
     tool,
     shellProps,
     "Generate a simple Mermaid architecture diagram from service relationships.",
-    <ToolInput label="System edges"><textarea rows="12" value={value} onChange={(event) => setValue(event.target.value)} /></ToolInput>,
-    <ResultText title="Mermaid diagram" value={output} />
+    <CodeField label="System edges" language="markdown" minHeight={220} onChange={setValue} value={value} />,
+    <ResultText language="markdown" title="Mermaid diagram" value={output} />
   );
 }
 

@@ -3,7 +3,7 @@ import { Navigate, useParams } from "react-router-dom";
 import { toolRegistry } from "../data/toolRegistry";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { addRecentTool, PINNED_TOOLS_KEY, RECENT_TOOLS_KEY, togglePinnedTool } from "../lib/storage";
+import { addRecentTool, asSlugList, PINNED_TOOLS_KEY, RECENT_TOOLS_KEY, togglePinnedTool } from "../lib/storage";
 import { trackEvent } from "../lib/analytics";
 import { enrichToolForSeo } from "../lib/seoGraph";
 
@@ -14,14 +14,16 @@ export function ToolPage({ legacyPath = false }) {
   const resolvedTool = tool ? enrichToolForSeo(tool, toolRegistry) : null;
   const [pinnedTools, setPinnedTools] = useLocalStorage(PINNED_TOOLS_KEY, []);
   const [recentTools, setRecentTools] = useLocalStorage(RECENT_TOOLS_KEY, []);
+  const safePinnedTools = asSlugList(pinnedTools);
+  const safeRecentTools = asSlugList(recentTools);
 
   useDocumentMeta(resolvedTool?.seoTitle, resolvedTool?.seoDescription ?? "Findtools tool");
 
   useEffect(() => {
     if (!resolvedTool) return;
-    if (recentTools[0] === resolvedTool.slug) return;
+    if (safeRecentTools[0] === resolvedTool.slug) return;
     setRecentTools((existing) => addRecentTool(existing, resolvedTool.slug));
-  }, [recentTools, resolvedTool, setRecentTools]);
+  }, [resolvedTool, safeRecentTools, setRecentTools]);
 
   useEffect(() => {
     if (!resolvedTool) return;
@@ -45,7 +47,7 @@ export function ToolPage({ legacyPath = false }) {
   return (
     <Suspense fallback={<div className="section-card">Loading tool…</div>}>
       <Component
-        isPinned={pinnedTools.includes(tool.slug)}
+        isPinned={safePinnedTools.includes(tool.slug)}
         onTogglePinned={() => setPinnedTools((existing) => togglePinnedTool(existing, resolvedTool.slug))}
         tool={resolvedTool}
       />

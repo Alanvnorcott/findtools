@@ -575,6 +575,58 @@ const requestedLongTailAdditions = [
 toolRegistry.push(...requestedLongTailAdditions);
 
 function commentGeneratorTool(config) {
+  const commentEditorLanguageMap = {
+    Python: "python",
+    C: "c",
+    "C++": "cpp",
+    Java: "java",
+    "C#": "csharp",
+    JavaScript: "javascript",
+    "Visual Basic": "basic",
+    SQL: "sql",
+    R: "r",
+    "Delphi/Object Pascal": "markdown",
+    Scratch: "markdown",
+    Perl: "perl",
+    Fortran: "markdown",
+    PHP: "php",
+    Go: "go",
+    Rust: "rust",
+    MATLAB: "matlab",
+    "Assembly Language": "markdown",
+    Swift: "markdown",
+    Ada: "markdown",
+    "PL/SQL": "sql",
+    Prolog: "markdown",
+    COBOL: "markdown",
+    Kotlin: "kotlin",
+    SAS: "markdown",
+    "Classic Visual Basic": "basic",
+    "Objective-C": "objective-c",
+    Dart: "dart",
+    Ruby: "ruby",
+    Lua: "lua",
+    Lisp: "lisp",
+    Julia: "markdown",
+    ML: "markdown",
+    TypeScript: "typescript",
+    Haskell: "markdown",
+    VBScript: "vbscript",
+    ABAP: "markdown",
+    OCaml: "markdown",
+    Zig: "markdown",
+    Caml: "markdown",
+    Erlang: "markdown",
+    "X++": "markdown",
+    Scala: "scala",
+    "Transact-SQL": "sql",
+    PowerShell: "powershell",
+    GML: "javascript",
+    LabVIEW: "markdown",
+    "Ladder Logic": "markdown",
+    Solidity: "javascript",
+    "Visual FoxPro": "basic"
+  };
   return tool("dev-tech", {
     slug: config.slug,
     name: config.name,
@@ -589,6 +641,7 @@ function commentGeneratorTool(config) {
     component: lazyTool(() => import("../tools/GeneratorTools"), "LanguageCommentGeneratorTool"),
     languageName: config.languageName,
     commentSyntax: config.commentSyntax,
+    commentEditorLanguage: config.commentEditorLanguage || commentEditorLanguageMap[config.languageName] || "markdown",
     commentSample: config.commentSample || "Add your comment here\nPress Enter to keep typing",
     trustNote: "Comment text stays in your browser. We do not store, share, or retain what you type into this tool.",
     ...(config.commentNote ? { commentNote: config.commentNote } : {})
@@ -1139,7 +1192,101 @@ const codingToolAdditions = [
   })
 ];
 
-toolRegistry.push(...codingToolAdditions);
+function ideTool(slug, name, shortDescription, defaultLanguage, aliases = []) {
+  const isGenericIde = /^online ide$/i.test(name);
+  const languageLabel = isGenericIde ? "Programming Language" : name.replace(/\s+Online IDE$/i, "").trim();
+  const lowerLabel = isGenericIde ? "online ide" : languageLabel.toLowerCase();
+  const generatedAliases = defaultLanguage && !isGenericIde
+    ? [
+        `${defaultLanguage}-ide-online`,
+        `online-${defaultLanguage}-ide`,
+        `${defaultLanguage}-browser-ide`,
+        `${defaultLanguage}-code-editor-online`
+      ]
+    : [];
+  return tool("dev-tech", {
+    slug,
+    name,
+    shortDescription,
+    seoTitle: name,
+    seoDescription: isGenericIde
+      ? "Online IDE with local syntax highlighting, local draft save, and browser-based editing for multiple interpreted languages."
+      : `${languageLabel} IDE online with local syntax highlighting, local draft save, and browser-based editing.`,
+    tags: ["ide", "editor", "code", defaultLanguage].filter(Boolean),
+    aliases: [...new Set([...aliases, ...generatedAliases])],
+    primaryKeyword: isGenericIde ? "online ide" : `online ${lowerLabel} ide`,
+    secondaryKeywords: isGenericIde
+      ? ["browser ide", "online code editor", "coding ide online", "web ide"]
+      : [
+          `${lowerLabel} ide online`,
+          `${lowerLabel} browser ide`,
+          `${lowerLabel} code editor online`,
+          `${lowerLabel} playground online`
+        ],
+    examples: [
+      isGenericIde
+        ? "Use the online IDE page to switch between supported interpreted languages and keep local browser drafts."
+        : `Use ${name.toLowerCase()} to draft, paste, or revise ${languageLabel} code with syntax highlighting in the browser.`,
+      isGenericIde
+        ? "Open one browser IDE workspace and jump into a language-specific editor when you know what you need."
+        : `Keep a local ${languageLabel} scratch file open during work and copy or download it when you are done.`,
+      isGenericIde
+        ? "Use the generic online IDE page as the hub for Python, JavaScript, PHP, Ruby, and other interpreter-friendly editors."
+        : `Switch to the ${languageLabel} IDE page directly when you specifically need an online ${languageLabel} editor.`
+    ],
+    useCases: [
+      isGenericIde
+        ? "Quickly open a browser IDE and choose a supported interpreted language."
+        : `Quickly open an online ${languageLabel} IDE without installing desktop software.`,
+      isGenericIde
+        ? "Keep a lightweight coding tab open beside other tools during work."
+        : `Draft and revise ${languageLabel} snippets in a browser tab beside your normal work.`,
+      "Keep local-only code notes, experiments, and snippets without uploading them anywhere."
+    ],
+    faqs: [
+      {
+        question: isGenericIde ? "Is this online IDE page local or server-based?" : `Is this ${languageLabel.toLowerCase()} IDE online or local?`,
+        answer: isGenericIde
+          ? "The page loads in your browser and keeps drafts on your device. It behaves like an online IDE page with local-only editing."
+          : `The page runs in your browser and keeps drafts on your device. It is an online ${languageLabel} IDE page with local-only editing behavior.`
+      },
+      {
+        question: isGenericIde ? "Does this online IDE store my code?" : `Does this ${languageLabel.toLowerCase()} IDE store my code?`,
+        answer: "No. Drafts stay in your own browser storage and are not uploaded or retained by the site."
+      },
+      {
+        question: isGenericIde ? "Can I use this as a quick code editor online?" : `Can I use this as a quick ${languageLabel.toLowerCase()} code editor online?`,
+        answer: isGenericIde
+          ? "Yes. The page is designed to work as a fast browser code editor with language switching, syntax highlighting, and local drafts."
+          : `Yes. The page is designed to work as a fast ${languageLabel} code editor online with syntax highlighting and easy copy or download.`
+      }
+    ],
+    inputModel: "Code editor",
+    outputModel: "Editor and console",
+    usesLanguage: true,
+    defaultLanguage,
+    component: lazyTool(() => import("../tools/IdeTools"), "OnlineIdeTool")
+  });
+}
+
+const ideToolAdditions = [
+  ideTool("online-ide", "Online IDE", "Edit code in a local browser IDE with syntax highlighting and per-language drafts.", "javascript"),
+  ideTool("python-online-ide", "Python Online IDE", "Edit Python in a local browser IDE with syntax highlighting and saved drafts.", "python"),
+  ideTool("javascript-online-ide", "JavaScript Online IDE", "Edit and run JavaScript in a local browser IDE.", "javascript"),
+  ideTool("php-online-ide", "PHP Online IDE", "Edit PHP in a local browser IDE with syntax highlighting and saved drafts.", "php"),
+  ideTool("ruby-online-ide", "Ruby Online IDE", "Edit Ruby in a local browser IDE with syntax highlighting and saved drafts.", "ruby"),
+  ideTool("perl-online-ide", "Perl Online IDE", "Edit Perl in a local browser IDE with syntax highlighting and saved drafts.", "perl"),
+  ideTool("r-online-ide", "R Online IDE", "Edit R in a local browser IDE with syntax highlighting and saved drafts.", "r"),
+  ideTool("lua-online-ide", "Lua Online IDE", "Edit Lua in a local browser IDE with syntax highlighting and saved drafts.", "lua"),
+  ideTool("matlab-online-ide", "MATLAB Online IDE", "Edit MATLAB-style code in a local browser IDE with syntax highlighting and saved drafts.", "matlab"),
+  ideTool("lisp-online-ide", "Lisp Online IDE", "Edit Lisp in a local browser IDE with syntax highlighting and saved drafts.", "lisp"),
+  ideTool("basic-online-ide", "BASIC Online IDE", "Edit BASIC in a local browser IDE with syntax highlighting and saved drafts.", "basic"),
+  ideTool("bash-online-ide", "Bash Online IDE", "Edit shell scripts in a local browser IDE with syntax highlighting and saved drafts.", "bash", ["shell-online-ide"]),
+  ideTool("powershell-online-ide", "PowerShell Online IDE", "Edit PowerShell in a local browser IDE with syntax highlighting and saved drafts.", "powershell"),
+  ideTool("vbscript-online-ide", "VBScript Online IDE", "Edit VBScript in a local browser IDE with syntax highlighting and saved drafts.", "vbscript")
+];
+
+toolRegistry.push(...codingToolAdditions, ...ideToolAdditions);
 
 const seenSlugs = new Set();
 for (const entry of toolRegistry) {

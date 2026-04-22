@@ -80,6 +80,14 @@ textarea {
   resize: vertical;
 }
 
+.code-editor-shell {
+  min-height: 220px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+
 pre {
   margin: 0;
   white-space: pre-wrap;
@@ -89,6 +97,29 @@ pre {
 
 .app-shell {
   min-height: 100vh;
+}
+
+.app-crash-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.app-crash-card {
+  width: min(100%, 720px);
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.app-crash-card pre {
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .topbar {
@@ -426,6 +457,12 @@ p {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: auto;
+}
+
+.result-panel .result-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .result-panel__label,

@@ -260,6 +260,30 @@ Do not create one-off per-language implementations when a shared engine strategy
 
 High-value language pages can exist as separate routes, but they should only preselect language metadata and reuse the same underlying component.
 
+## Shared code editor rule
+
+If the tool works with code, config, markup, SQL, commands, or structured developer text, prefer the shared highlighted code editor surface over a plain textarea.
+
+This applies to:
+- code formatters
+- code minifiers
+- validators
+- model generators
+- IDE pages
+- command/query builders when code readability matters
+
+The editor must be lazy-loaded so non-code tools do not pay the bundle cost.
+
+## IDE tool rule
+
+IDE-like tools should use the shared `ideEngine`.
+
+That means:
+- language metadata comes from the engine registry
+- runtime support is explicit per language
+- unsupported runtimes should still provide editing, highlighting, local draft save, and export
+- IDE dependencies must remain isolated from the main site bundle
+
 ## Unit test baseline
 
 Each new tool should be able to add a very small unit test without mounting React.
@@ -270,6 +294,25 @@ Preferred pattern:
 3. leave UI rendering to the shared shell unless the tool has unusual rendering logic
 
 Testing is expected for new tools by default.
+
+UI smoke coverage is also expected when a tool or shared change can affect startup, routing, lazy loading, or render safety.
+
+Preferred UI smoke pattern:
+1. add a tiny `*.ui.test.jsx` file
+2. render through shared routing with jsdom
+3. verify one stable heading or primary control
+4. add a crash or fallback assertion when touching error handling or shared boot paths
+
+Examples of changes that should add or update UI smoke tests:
+- app shell changes
+- tool page routing changes
+- registry generation or alias logic
+- lazy-loaded editor or IDE infrastructure
+- error boundaries
+- shared search or navigation
+
+Keep UI tests lean.
+They exist to catch white-screen regressions and broken shared flows, not to snapshot every pixel.
 
 For shared coding tools specifically:
 - add or extend tests in `src/lib/codingLanguageEngine.test.js` when changing language behavior

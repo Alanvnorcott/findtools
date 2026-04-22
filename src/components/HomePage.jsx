@@ -3,21 +3,23 @@ import { useState } from "react";
 import { categories } from "../data/categories";
 import { toolRegistry } from "../data/toolRegistry";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { PINNED_TOOLS_KEY, RECENT_TOOLS_KEY } from "../lib/storage";
+import { asSlugList, PINNED_TOOLS_KEY, RECENT_TOOLS_KEY } from "../lib/storage";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import { ToolGrid, ToolList } from "./common";
 
 export function HomePage() {
   const [pinnedTools] = useLocalStorage(PINNED_TOOLS_KEY, []);
   const [recentTools] = useLocalStorage(RECENT_TOOLS_KEY, []);
+  const safePinnedTools = asSlugList(pinnedTools);
+  const safeRecentTools = asSlugList(recentTools);
 
   useDocumentMeta(
     "Findtools",
     "A browser-based utility workspace with fast tools for text, files, calculations, conversions, and technical tasks."
   );
 
-  const pinned = toolRegistry.filter((tool) => pinnedTools.includes(tool.slug));
-  const recent = recentTools
+  const pinned = toolRegistry.filter((tool) => safePinnedTools.includes(tool.slug));
+  const recent = safeRecentTools
     .map((slug) => toolRegistry.find((tool) => tool.slug === slug))
     .filter(Boolean);
 
