@@ -2,9 +2,91 @@ import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { ActionRow, KeyValueList, ResultPanel, ToolInput } from "../components/common";
 import { ToolShell } from "../components/ToolShell";
+import {
+  contrastRatio,
+  generateCommentBlock,
+  hexToRgb,
+  mixHexColors,
+  normalizeHex,
+  rgbToHex,
+  shiftColorToward
+} from "../lib/toolLogic/generators";
 
 function randomFrom(items) {
   return items[Math.floor(Math.random() * items.length)];
+}
+
+function rgbToHsl(r, g, b) {
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const lightness = (max + min) / 2;
+  const delta = max - min;
+  if (delta === 0) return { h: 0, s: 0, l: lightness };
+  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+  let hue = 0;
+  switch (max) {
+    case red:
+      hue = (green - blue) / delta + (green < blue ? 6 : 0);
+      break;
+    case green:
+      hue = (blue - red) / delta + 2;
+      break;
+    default:
+      hue = (red - green) / delta + 4;
+      break;
+  }
+  return { h: hue / 6, s: saturation, l: lightness };
+}
+
+function hslToRgb(h, s, l) {
+  if (s === 0) {
+    const value = Math.round(l * 255);
+    return { r: value, g: value, b: value };
+  }
+  const hue2rgb = (p, q, t) => {
+    let value = t;
+    if (value < 0) value += 1;
+    if (value > 1) value -= 1;
+    if (value < 1 / 6) return p + (q - p) * 6 * value;
+    if (value < 1 / 2) return q;
+    if (value < 2 / 3) return p + (q - p) * (2 / 3 - value) * 6;
+    return p;
+  };
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return {
+    r: Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
+    g: Math.round(hue2rgb(p, q, h) * 255),
+    b: Math.round(hue2rgb(p, q, h - 1 / 3) * 255)
+  };
+}
+
+function rotateHue(hex, degrees) {
+  const { r, g, b } = hexToRgb(hex);
+  const { h, s, l } = rgbToHsl(r, g, b);
+  const rotated = (h + degrees / 360 + 1) % 1;
+  const rgb = hslToRgb(rotated, s, l);
+  return rgbToHex(rgb.r, rgb.g, rgb.b);
+}
+
+function ColorRows({ colors }) {
+  return (
+    <div className="stack-sm">
+      {colors.map((item) => (
+        <div className="kv-list__row" key={`${item.label}-${item.value}`}>
+          <dt>{item.label}</dt>
+          <dd>
+            <span className="swatch" style={{ background: item.value }} />
+            {" "}
+            {item.value}
+          </dd>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function PasswordGeneratorTool({ tool, ...shellProps }) {
@@ -228,4 +310,154 @@ export function ProjectNameGeneratorTool({ tool, ...shellProps }) {
   const generate = () => setValue(`${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`);
   tool.copyValue = () => value;
   return <ToolShell {...shellProps} tool={tool} instructions="Generate a short project or codename idea." inputArea={<ActionRow><button className="button" onClick={generate} type="button">Generate project name</button></ActionRow>} outputArea={<ResultPanel value={value || "Generate a project name to see it here."} />} />;
+}
+
+export function LanguageCommentGeneratorTool({ tool, ...shellProps }) {
+  const [value, setValue] = useState(tool.commentSample || "Add your comment here\nPress Enter to keep typing");
+  const output = useMemo(() => generateCommentBlock(value, tool.commentSyntax), [tool.commentSyntax, value]);
+  tool.copyValue = () => output;
+
+  const extra = tool.commentNote ? <p>{tool.commentNote}</p> : null;
+
+  return (
+    <ToolShell
+      {...shellProps}
+      tool={tool}
+      instructions={`Type or paste multiple lines for ${tool.languageName}. Press Enter to keep adding lines and copy the generated comment block when it looks right.`}
+      inputArea={
+        <>
+          <ToolInput label={`${tool.languageName} comment text`} hint="Multi-line input is supported. Blank lines are preserved.">
+            <textarea rows="12" value={value} onChange={(event) => setValue(event.target.value)} />
+          </ToolInput>
+          <ActionRow>
+            <button
+              className="button button--secondary"
+              onClick={() => setValue(tool.commentSample || "Add your comment here\nPress Enter to keep typing")}
+              type="button"
+            >
+              Reset
+            </button>
+          </ActionRow>
+        </>
+      }
+      outputArea={<ResultPanel value={output} />}
+      extra={extra}
+    />
+  );
+}
+
+export function ColorVariantGeneratorTool({ tool, ...shellProps }) {
+  const [base, setBase] = useState("#2563eb");
+  const [other, setOther] = useState("#f59e0b");
+  const [ratio, setRatio] = useState("50");
+
+  const normalizedBase = normalizeHex(base);
+  const normalizedOther = normalizeHex(other);
+  const mixRatio = Math.max(0, Math.min(100, Number(ratio) || 0)) / 100;
+
+  const result = useMemo(() => {
+    switch (tool.slug) {
+      case "color-tint-generator":
+        return {
+          title: "Color tints",
+          lines: [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].map((step, index) => ({
+            label: `Tint ${index + 1}`,
+            value: shiftColorToward(normalizedBase, "#ffffff", step)
+          }))
+        };
+      case "complementary-color-generator":
+        return {
+          title: "Related colors",
+          lines: [
+            { label: "Base", value: normalizedBase },
+            { label: "Complement", value: rotateHue(normalizedBase, 180) },
+            { label: "Analogous left", value: rotateHue(normalizedBase, -30) },
+            { label: "Analogous right", value: rotateHue(normalizedBase, 30) }
+          ]
+        };
+      case "monochromatic-color-palette-generator":
+        return {
+          title: "Monochromatic palette",
+          lines: [0.18, 0.36, 0.54, 0.72, 0.9].map((step, index) => ({
+            label: `Tone ${index + 1}`,
+            value: index < 2
+              ? shiftColorToward(normalizedBase, "#000000", 0.45 - index * 0.18)
+              : shiftColorToward(normalizedBase, "#ffffff", step - 0.36)
+          }))
+        };
+      case "color-mixer":
+        return {
+          title: "Mixed color",
+          lines: [
+            { label: "Color A", value: normalizedBase },
+            { label: "Color B", value: normalizedOther },
+            { label: `Mix ${Math.round(mixRatio * 100)}%`, value: mixHexColors(normalizedBase, normalizedOther, mixRatio) }
+          ]
+        };
+      case "color-contrast-checker": {
+        const contrast = contrastRatio(normalizedBase, normalizedOther);
+        return {
+          title: "Contrast check",
+          lines: [
+            { label: "Foreground", value: normalizedBase },
+            { label: "Background", value: normalizedOther },
+            { label: "Contrast ratio", value: `${contrast.toFixed(2)}:1` },
+            { label: "WCAG AA normal text", value: contrast >= 4.5 ? "Pass" : "Fail" },
+            { label: "WCAG AAA normal text", value: contrast >= 7 ? "Pass" : "Fail" }
+          ]
+        };
+      }
+      default:
+        return { title: "Colors", lines: [{ label: "Base", value: normalizedBase }] };
+    }
+  }, [mixRatio, normalizedBase, normalizedOther, tool.slug]);
+
+  tool.copyValue = () => result.lines.map((item) => `${item.label}: ${item.value}`).join("\n");
+
+  const needsSecondColor = ["color-mixer", "color-contrast-checker"].includes(tool.slug);
+  const needsRatio = tool.slug === "color-mixer";
+
+  return (
+    <ToolShell
+      {...shellProps}
+      tool={tool}
+      instructions="Adjust the color inputs and copy the generated values you want to reuse."
+      inputArea={
+        <>
+          <ToolInput label="Base color">
+            <input value={base} onChange={(event) => setBase(event.target.value)} />
+          </ToolInput>
+          {needsSecondColor ? (
+            <ToolInput label={tool.slug === "color-contrast-checker" ? "Background color" : "Second color"}>
+              <input value={other} onChange={(event) => setOther(event.target.value)} />
+            </ToolInput>
+          ) : null}
+          {needsRatio ? (
+            <ToolInput label="Mix ratio (%)">
+              <input value={ratio} onChange={(event) => setRatio(event.target.value)} />
+            </ToolInput>
+          ) : null}
+          <ActionRow>
+            <button
+              className="button button--secondary"
+              onClick={() => {
+                setBase("#2563eb");
+                setOther("#f59e0b");
+                setRatio("50");
+              }}
+              type="button"
+            >
+              Reset
+            </button>
+          </ActionRow>
+        </>
+      }
+      outputArea={
+        <ResultPanel title={result.title}>
+          <ColorRows colors={result.lines.filter((item) => /^#/.test(item.value))} />
+          <KeyValueList items={result.lines} />
+        </ResultPanel>
+      }
+    />
+  );
 }

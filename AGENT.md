@@ -157,6 +157,18 @@ Each tool must be easy to:
 This project should scale cleanly to 100+ tools.
 It should also scale cleanly to hundreds of search-targeted pages without becoming a hand-authored mess.
 
+## Shared Coding Tool Rule
+
+If a tool behaves differently by programming language, do not build a separate implementation for each language.
+
+Use the shared `codingLanguageEngine` instead:
+- register language capabilities in the engine
+- route tool behavior through `format`, `minify`, `validate`, or `transform`
+- keep UI wrappers thin and registry-driven
+
+If a new high-value language variant page is needed, add a registry entry or generated variant that preselects the language.
+Do not fork the logic into a new component just to support one language-specific page.
+
 ## SEO System Requirement
 
 Findtools is not just a UI catalog.
@@ -218,6 +230,15 @@ Prioritize:
 - minimal dependencies
 - code reuse
 - small bundles
+
+## Test Expectation
+
+New deterministic logic should ship with a small unit test by default.
+
+Preferred pattern:
+- put shared coding logic in `src/lib/codingLanguageEngine.js` or `src/lib/toolLogic/*.js`
+- test valid path plus one or two meaningful edge cases
+- if a tool is very low-tier filler with almost no demand, a missing test can be acceptable, but that should be the exception rather than the rule
 - fast load times
 
 Avoid:

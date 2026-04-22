@@ -69,7 +69,8 @@ export default function App() {
           }
         />
         <Route path="/category/:categorySlug" element={<CategoryPage />} />
-        <Route path="/tools/:toolSlug" element={<ToolPage />} />
+        <Route path="/tools/:toolSlug" element={<ToolPage legacyPath />} />
+        <Route path="/:toolSlug" element={<ToolPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

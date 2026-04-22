@@ -247,6 +247,19 @@ Recommended test structure:
 
 Keep tool logic isolated from presentation where possible.
 
+## Shared coding engine rule
+
+If a tool is language-aware, it should use the shared `codingLanguageEngine`.
+
+That means:
+- language capabilities belong in the engine registry
+- language-sensitive behavior should call `format`, `minify`, `validate`, or `transform`
+- tool components should mostly define inputs, outputs, and registry metadata
+
+Do not create one-off per-language implementations when a shared engine strategy can cover them.
+
+High-value language pages can exist as separate routes, but they should only preselect language metadata and reuse the same underlying component.
+
 ## Unit test baseline
 
 Each new tool should be able to add a very small unit test without mounting React.
@@ -257,6 +270,10 @@ Preferred pattern:
 3. leave UI rendering to the shared shell unless the tool has unusual rendering logic
 
 Testing is expected for new tools by default.
+
+For shared coding tools specifically:
+- add or extend tests in `src/lib/codingLanguageEngine.test.js` when changing language behavior
+- add focused helper tests in `src/lib/toolLogic/*.test.js` for deterministic generators, validators, or estimators
 
 Skip tests only when the tool is clearly very low-tier / low-demand, extremely trivial, and not worth ongoing maintenance overhead.
 If you skip tests, that should be a deliberate judgment call, not the default path.

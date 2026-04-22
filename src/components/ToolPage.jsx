@@ -7,7 +7,7 @@ import { addRecentTool, PINNED_TOOLS_KEY, RECENT_TOOLS_KEY, togglePinnedTool } f
 import { trackEvent } from "../lib/analytics";
 import { enrichToolForSeo } from "../lib/seoGraph";
 
-export function ToolPage() {
+export function ToolPage({ legacyPath = false }) {
   const { toolSlug } = useParams();
   const tool = toolRegistry.find((entry) => entry.slug === toolSlug);
   const aliasMatch = !tool ? toolRegistry.find((entry) => (entry.aliases || []).includes(toolSlug)) : null;
@@ -29,11 +29,15 @@ export function ToolPage() {
   }, [resolvedTool]);
 
   if (aliasMatch) {
-    return <Navigate to={`/tools/${aliasMatch.slug}`} replace />;
+    return <Navigate to={`/${aliasMatch.slug}`} replace />;
   }
 
   if (!resolvedTool) {
     return <Navigate to="/" replace />;
+  }
+
+  if (legacyPath) {
+    return <Navigate to={`/${resolvedTool.slug}`} replace />;
   }
 
   const Component = resolvedTool.component;

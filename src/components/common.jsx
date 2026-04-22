@@ -90,7 +90,7 @@ export function ToolGrid({ tools }) {
   return (
     <div className="tool-grid">
       {tools.map((tool) => (
-        <Link className="tool-card" key={tool.slug} to={`/tools/${tool.slug}`}>
+        <Link className="tool-card" key={tool.slug} to={`/${tool.slug}`}>
           <div className="tool-card__meta">
             <span className="chip">{tool.categoryName}</span>
           </div>
@@ -113,7 +113,7 @@ export function ToolList({ tools }) {
   return (
     <div className="tool-list">
       {tools.map((tool) => (
-        <Link className="tool-list__item" key={tool.slug} to={`/tools/${tool.slug}`}>
+        <Link className="tool-list__item" key={tool.slug} to={`/${tool.slug}`}>
           <span>{tool.name}</span>
           <small>{tool.categoryName}</small>
         </Link>

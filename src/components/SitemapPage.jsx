@@ -37,7 +37,7 @@ export function SitemapPage() {
             </div>
             <div className="tool-list tool-list--dense">
               {tools.map((tool) => (
-                <Link className="tool-list__item" key={tool.slug} to={`/tools/${tool.slug}`}>
+                <Link className="tool-list__item" key={tool.slug} to={`/${tool.slug}`}>
                   {tool.name}
                 </Link>
               ))}

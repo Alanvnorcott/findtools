@@ -89,7 +89,7 @@ export function SearchDialog({ open, onClose }) {
         <div className="search-modal__results">
           {results.length ? (
             results.map((tool) => (
-              <Link className="search-result" key={tool.slug} onClick={onClose} to={`/tools/${tool.slug}`}>
+              <Link className="search-result" key={tool.slug} onClick={onClose} to={`/${tool.slug}`}>
                 <div>
                   <strong>{tool.name}</strong>
                   <p>{tool.shortDescription}</p>
