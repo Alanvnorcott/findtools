@@ -10,6 +10,11 @@ export const categories = [
     description: "Handle PDFs and images directly in your browser."
   },
   {
+    slug: "audio",
+    name: "Audio",
+    description: "Generate, analyze, and transform audio directly in your browser."
+  },
+  {
     slug: "calculators",
     name: "Calculators",
     description: "Quick everyday calculations for work, money, and time."

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { copyText } from "../lib/utils";
+import { formatDigitalCountdown } from "../lib/toolLogic/audio";
 
 export function SectionCard({ title, subtitle, actions, children }) {
   return (
@@ -24,6 +25,36 @@ export function ToolInput({ label, hint, children }) {
       {hint ? <span className="field__hint">{hint}</span> : null}
       {children}
     </label>
+  );
+}
+
+export function RangeField({
+  label,
+  hint,
+  min,
+  max,
+  step = 1,
+  value,
+  onChange,
+  unit = "",
+  formatBound = (bound) => `${bound}${unit}`
+}) {
+  const currentValue = value ?? "";
+  const emit = (nextValue) => onChange?.(nextValue);
+
+  return (
+    <div className="field">
+      <span className="field__label">{label}</span>
+      {hint ? <span className="field__hint">{hint}</span> : null}
+      <div className="range-field">
+        <input aria-label={`${label} slider`} max={max} min={min} step={step} type="range" value={currentValue} onChange={(event) => emit(event.target.value)} />
+        <input aria-label={`${label} value`} className="range-field__number" max={max} min={min} step={step} type="number" value={currentValue} onChange={(event) => emit(event.target.value)} />
+      </div>
+      <div className="range-field__bounds" aria-hidden="true">
+        <span>{formatBound(min)}</span>
+        <span>{formatBound(max)}</span>
+      </div>
+    </div>
   );
 }
 
@@ -55,6 +86,34 @@ export function KeyValueList({ items }) {
 
 export function ActionRow({ children }) {
   return <div className="action-row">{children}</div>;
+}
+
+export function CountdownTimer({ label = "Time remaining", remainingSeconds, active = false, idleText = "No timer active." }) {
+  const display = active && typeof remainingSeconds === "number" ? formatDigitalCountdown(remainingSeconds) : null;
+  const segments = display ? display.split(":") : ["00", "00", "00"];
+
+  return (
+    <div className={`countdown-timer${active ? " countdown-timer--active" : ""}`}>
+      <div className="countdown-timer__label">{label}</div>
+      <div className="countdown-timer__digits" aria-live="polite">
+        <div className="countdown-timer__unit">
+          <strong>{segments[0]}</strong>
+          <span>Hours</span>
+        </div>
+        <div className="countdown-timer__separator">:</div>
+        <div className="countdown-timer__unit">
+          <strong>{segments[1]}</strong>
+          <span>Minutes</span>
+        </div>
+        <div className="countdown-timer__separator">:</div>
+        <div className="countdown-timer__unit">
+          <strong>{segments[2]}</strong>
+          <span>Seconds</span>
+        </div>
+      </div>
+      <p className="countdown-timer__note">{active && display ? "Timer is running live." : idleText}</p>
+    </div>
+  );
 }
 
 export function CopyButton({ getValue, label = "Copy" }) {

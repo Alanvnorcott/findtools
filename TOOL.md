@@ -284,6 +284,14 @@ That means:
 - unsupported runtimes should still provide editing, highlighting, local draft save, and export
 - IDE dependencies must remain isolated from the main site bundle
 
+Prefer lightweight interpreters or small deterministic runners for IDE pages before reaching for large WASM stacks.
+If a heavier runtime is ever necessary, it must be lazy-loaded per language and never pulled into the main app path.
+
+Each runnable IDE language should ship with:
+- a starter program that produces visible output
+- a unit test proving that starter output works
+- honest UI messaging about the execution model
+
 ## Unit test baseline
 
 Each new tool should be able to add a very small unit test without mounting React.

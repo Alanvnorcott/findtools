@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { ActionRow, KeyValueList, ResultPanel, ToolInput } from "../components/common";
+import { ActionRow, KeyValueList, RangeField, ResultPanel, ToolInput } from "../components/common";
 import { CodeField, CodeResultPanel } from "../components/CodeEditor";
 import { ToolShell } from "../components/ToolShell";
 import {
@@ -98,7 +98,7 @@ export function PasswordGeneratorTool({ tool, ...shellProps }) {
     setPassword(Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join(""));
   };
   tool.copyValue = () => password;
-  return <ToolShell {...shellProps} tool={tool} instructions="Generate a strong password locally." inputArea={<><ToolInput label="Length"><input max="64" min="8" type="range" value={length} onChange={(e) => setLength(Number(e.target.value))} /></ToolInput><ActionRow><button className="button" onClick={generate} type="button">Generate password</button><button className="button button--secondary" onClick={() => { setLength(16); setPassword(""); }} type="button">Reset</button></ActionRow></>} outputArea={<ResultPanel value={password || "Generate a password to see it here."} />} />;
+  return <ToolShell {...shellProps} tool={tool} instructions="Generate a strong password locally." inputArea={<><RangeField label="Length" max="64" min="8" step="1" value={String(length)} onChange={(next) => setLength(Number(next))} /><ActionRow><button className="button" onClick={generate} type="button">Generate password</button><button className="button button--secondary" onClick={() => { setLength(16); setPassword(""); }} type="button">Reset</button></ActionRow></>} outputArea={<ResultPanel value={password || "Generate a password to see it here."} />} />;
 }
 
 export function PasswordPhraseGeneratorTool({ tool, ...shellProps }) {

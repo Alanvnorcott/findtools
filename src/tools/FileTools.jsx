@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
-import { ActionRow, KeyValueList, ResultPanel, ToolInput } from "../components/common";
+import { ActionRow, KeyValueList, RangeField, ResultPanel, ToolInput } from "../components/common";
 import { ToolShell } from "../components/ToolShell";
 import { parsePageRange } from "../lib/toolLogic/fileTools";
 import { bytesToSize, downloadBlob } from "../lib/utils";
@@ -142,7 +142,7 @@ function ImageTransformTool({ tool, mode, convertType, downloadName, ...shellPro
       inputArea={
         <>
           <ToolInput label="Image file"><input accept="image/*" onChange={onFileChange} type="file" /></ToolInput>
-          {mode === "compress" ? <ToolInput label="Quality"><input max="1" min="0.1" step="0.05" type="range" value={quality} onChange={(e) => setQuality(Number(e.target.value))} /></ToolInput> : null}
+          {mode === "compress" ? <RangeField label="Quality" max="1" min="0.1" step="0.05" value={String(quality)} onChange={(next) => setQuality(Number(next))} /> : null}
           {mode === "resize" || mode === "convert" || mode === "crop" ? (
             <div className="split-fields">
               <ToolInput label="Width"><input value={width} onChange={(e) => setWidth(e.target.value)} /></ToolInput>

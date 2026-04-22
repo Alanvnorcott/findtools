@@ -1,92 +1,107 @@
+import { runJavaScriptSnippet, runLightIdeCode } from "./toolLogic/ideRuntime";
+
 export const ideLanguageRegistry = {
   javascript: {
     label: "JavaScript",
     editorLanguage: "javascript",
     supportsRun: true,
+    runtimeMode: "worker",
     extension: "js",
-    starter: `function greet(name) {\n  return \`Hello, \${name}\`;\n}\n\nconsole.log(greet("Findtools"));`
+    starter: `const name = "Findtools";\nconsole.log("Hello, " + name);`
   },
   python: {
     label: "Python",
     editorLanguage: "python",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "py",
-    starter: `def greet(name):\n    return f"Hello, {name}"\n\nprint(greet("Findtools"))`
+    starter: `name = "Findtools"\nprint("Hello, " + name)`
   },
   php: {
     label: "PHP",
     editorLanguage: "php",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "php",
-    starter: `<?php\nfunction greet($name) {\n    return "Hello, {$name}";\n}\n\necho greet("Findtools");`
+    starter: `<?php\n$name = "Findtools";\necho "Hello, " . $name;`
   },
   ruby: {
     label: "Ruby",
     editorLanguage: "ruby",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "rb",
-    starter: `def greet(name)\n  "Hello, #{name}"\nend\n\nputs greet("Findtools")`
+    starter: `name = "Findtools"\nputs "Hello, " + name`
   },
   perl: {
     label: "Perl",
     editorLanguage: "perl",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "pl",
-    starter: `sub greet {\n  my ($name) = @_;\n  return "Hello, $name";\n}\n\nprint greet("Findtools"), "\\n";`
+    starter: `my $name = "Findtools";\nprint "Hello, " . $name;`
   },
   r: {
     label: "R",
     editorLanguage: "r",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "r",
-    starter: `greet <- function(name) {\n  paste("Hello,", name)\n}\n\nprint(greet("Findtools"))`
+    starter: `name <- "Findtools"\nprint(paste("Hello,", name))`
   },
   lua: {
     label: "Lua",
     editorLanguage: "lua",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "lua",
-    starter: `local function greet(name)\n  return "Hello, " .. name\nend\n\nprint(greet("Findtools"))`
+    starter: `local name = "Findtools"\nprint("Hello, " .. name)`
   },
   matlab: {
     label: "MATLAB",
     editorLanguage: "matlab",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "m",
-    starter: `function message = greet(name)\nmessage = "Hello, " + name;\nend\n\ndisp(greet("Findtools"))`
+    starter: `name = "Findtools";\ndisp("Hello, " + name);`
   },
   lisp: {
     label: "Lisp",
     editorLanguage: "lisp",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "lisp",
-    starter: `(defun greet (name)\n  (format t "Hello, ~a~%" name))\n\n(greet "Findtools")`
+    starter: `(setq name "Findtools")\n(print (concatenate 'string "Hello, " name))`
   },
   basic: {
     label: "BASIC",
     editorLanguage: "basic",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "bas",
-    starter: `10 PRINT "Hello, Findtools"\n20 END`
+    starter: `10 LET NAME$ = "Findtools"\n20 PRINT "Hello, " + NAME$`
   },
   bash: {
     label: "Bash",
     editorLanguage: "bash",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "sh",
     starter: `#!/usr/bin/env bash\nname="Findtools"\necho "Hello, $name"`
   },
   powershell: {
     label: "PowerShell",
     editorLanguage: "powershell",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "ps1",
-    starter: `$name = "Findtools"\nWrite-Output "Hello, $name"`
+    starter: `$name = "Findtools"\nWrite-Output ("Hello, " + $name)`
   },
   vbscript: {
     label: "VBScript",
     editorLanguage: "vbscript",
-    supportsRun: false,
+    supportsRun: true,
+    runtimeMode: "light",
     extension: "vbs",
     starter: `Dim name\nname = "Findtools"\nWScript.Echo "Hello, " & name`
   }
@@ -116,24 +131,18 @@ export function downloadIdeSource(language, code) {
 }
 
 export async function runIdeCode(language, code) {
-  if (language !== "javascript") {
-    return {
-      ok: false,
-      output: `${getIdeLanguage(language).label} editing is supported here, but browser-side execution is not enabled for this language yet.`
-    };
+  const info = getIdeLanguage(language);
+
+  if (info.runtimeMode === "light") {
+    return runLightIdeCode(language, code);
   }
 
   return new Promise((resolve) => {
     const workerSource = `
       self.onmessage = async (event) => {
-        const logs = [];
-        const console = {
-          log: (...args) => logs.push(args.map((item) => typeof item === "string" ? item : JSON.stringify(item)).join(" ")),
-          error: (...args) => logs.push(args.map((item) => typeof item === "string" ? item : JSON.stringify(item)).join(" "))
-        };
         try {
-          const result = await (new Function("console", event.data.code))(console);
-          self.postMessage({ ok: true, output: [...logs, result === undefined ? "" : String(result)].filter(Boolean).join("\\n") || "Code ran with no output." });
+          const runJavaScriptSnippet = ${runJavaScriptSnippet.toString()};
+          self.postMessage(runJavaScriptSnippet(event.data.code));
         } catch (error) {
           self.postMessage({ ok: false, output: error.message });
         }

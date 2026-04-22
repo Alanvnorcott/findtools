@@ -9,7 +9,8 @@ describe("ideEngine", () => {
   });
 
   it("returns language metadata and draft keys", () => {
-    expect(getIdeLanguage("python")).toMatchObject({ label: "Python", editorLanguage: "python" });
+    expect(getIdeLanguage("python")).toMatchObject({ label: "Python", editorLanguage: "python", supportsRun: true, runtimeMode: "light" });
+    expect(getIdeLanguage("javascript")).toMatchObject({ supportsRun: true, runtimeMode: "worker" });
     expect(ideDraftKey("python")).toBe("findtools:ide:python");
   });
 });

@@ -29,7 +29,10 @@ export function OnlineIdeTool({ tool, ...shellProps }) {
     { label: "Language", value: languageInfo.label },
     { label: "Syntax highlighting", value: "Enabled" },
     { label: "Local draft save", value: "Enabled" },
-    { label: "Execution", value: languageInfo.supportsRun ? "Browser-side JavaScript runner" : "Editing only" }
+    {
+      label: "Execution",
+      value: languageInfo.runtimeMode === "worker" ? "Worker sandbox" : "Lightweight local runner"
+    }
   ];
 
   const runCode = async () => {
@@ -52,12 +55,12 @@ export function OnlineIdeTool({ tool, ...shellProps }) {
     <ToolShell
       {...shellProps}
       tool={tool}
-      instructions="Use the editor as a local browser IDE. Drafts stay on your device, syntax highlighting updates by language, and JavaScript can run in a local worker."
+      instructions="Use the editor as a local browser IDE. Drafts stay on your device, syntax highlighting updates by language, and code runs locally without sending it to a server."
       validation={
-        <InlineMessage tone={languageInfo.supportsRun ? "neutral" : "warning"}>
-          {languageInfo.supportsRun
-            ? "JavaScript runs in a local browser worker. Other listed languages currently use IDE editing mode only."
-            : `${languageInfo.label} is available in local IDE editing mode. Execution is not enabled for this language yet.`}
+        <InlineMessage tone="neutral">
+          {languageInfo.runtimeMode === "worker"
+            ? "JavaScript runs in a local worker sandbox."
+            : `${languageInfo.label} runs in a lightweight browser interpreter optimized for quick snippets, output, assignments, and simple expressions.`}
         </InlineMessage>
       }
       inputArea={
@@ -111,8 +114,9 @@ export function OnlineIdeTool({ tool, ...shellProps }) {
       }
       extra={
         <p>
-          IDE drafts are saved locally per language in your browser storage. Opening this page lazy-loads the editor
-          chunk, so the rest of Findtools does not pay the performance cost unless someone actually uses IDE or code tools.
+          IDE drafts are saved locally per language in your browser storage. The editor remains lazy-loaded, and the
+          non-JavaScript IDEs use lightweight built-in runners so the rest of Findtools does not take a large runtime
+          payload hit just because IDE pages exist on the site.
         </p>
       }
     />

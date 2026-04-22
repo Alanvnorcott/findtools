@@ -191,7 +191,14 @@ They must:
 - avoid increasing the main app bundle for non-IDE users
 - keep drafts local in browser storage only
 
-If a browser-side runtime is not realistic for a language, support editing/highlighting/export cleanly rather than faking execution.
+Prefer lightweight in-browser runners first.
+Do not introduce massive language payloads into the main app path just to make IDE pages exist.
+If a language runtime must be heavier, isolate it behind per-language lazy loading.
+
+Every runnable IDE language should have:
+- a starter snippet that actually produces output
+- a deterministic runtime test
+- clear UI copy about whether it uses a worker sandbox or lightweight local runner
 
 ## SEO System Requirement
 
