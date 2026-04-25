@@ -79,3 +79,159 @@ export function contrastRatio(colorA, colorB) {
   const darker = Math.min(l1, l2);
   return (lighter + 0.05) / (darker + 0.05);
 }
+
+function hashSeed(value) {
+  return String(value ?? "")
+    .split("")
+    .reduce((total, char, index) => (total * 31 + char.charCodeAt(0) + index) % 2147483647, 17);
+}
+
+function pickFrom(list, seed, offset = 0) {
+  if (!list.length) return "";
+  return list[(hashSeed(`${seed}:${offset}`) + offset) % list.length];
+}
+
+function slugify(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function uniqueValues(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+export function generateUsernameIdeas({
+  keyword = "",
+  style = "professional",
+  count = 8,
+  includeNumbers = true
+} = {}) {
+  const pools = {
+    professional: {
+      prefixes: ["clear", "steady", "north", "solid", "quiet", "trusted"],
+      suffixes: ["studio", "signal", "works", "build", "ops", "team"]
+    },
+    creator: {
+      prefixes: ["pixel", "loop", "frame", "analog", "ember", "mono"],
+      suffixes: ["craft", "maker", "lab", "daily", "notes", "edit"]
+    },
+    tech: {
+      prefixes: ["vector", "kernel", "stack", "query", "binary", "cloud"],
+      suffixes: ["forge", "ops", "dev", "stack", "sync", "build"]
+    },
+    short: {
+      prefixes: ["zen", "ark", "flux", "rift", "nova", "grid"],
+      suffixes: ["io", "hq", "co", "lab", "hub", "kit"]
+    }
+  };
+  const selected = pools[style] || pools.professional;
+  const seed = `${keyword}:${style}:${count}:${includeNumbers}`;
+  const cleanKeyword = slugify(keyword).replace(/-/g, "");
+
+  return uniqueValues(
+    Array.from({ length: count }, (_, index) => {
+      const prefix = pickFrom(selected.prefixes, seed, index);
+      const suffix = pickFrom(selected.suffixes, seed, index + 9);
+      const number = includeNumbers ? String((hashSeed(`${seed}:${index}:number`) % 89) + 11) : "";
+      return slugify([prefix, cleanKeyword || suffix, cleanKeyword ? suffix : "", number].filter(Boolean).join("-"));
+    })
+  ).slice(0, count);
+}
+
+export function generateCompanyNameIdeas({
+  industry = "software",
+  tone = "clear",
+  count = 8
+} = {}) {
+  const toneWords = {
+    clear: ["Clear", "Plain", "True", "Open", "Direct", "Sure"],
+    premium: ["North", "Summit", "Prime", "Sterling", "Foundry", "Apex"],
+    modern: ["Vector", "Signal", "Relay", "Pixel", "Circuit", "Orbit"],
+    warm: ["Harbor", "Maple", "Cedar", "Hearth", "Field", "Bright"]
+  };
+  const industryWords = {
+    software: ["Systems", "Labs", "Cloud", "Platform", "Works", "Logic"],
+    finance: ["Capital", "Ledger", "Advisors", "Partners", "Wealth", "Growth"],
+    health: ["Health", "Care", "Wellness", "Clinic", "Life", "Vitals"],
+    retail: ["Supply", "Goods", "Market", "Store", "Collective", "Trade"]
+  };
+  const left = toneWords[tone] || toneWords.clear;
+  const right = industryWords[industry] || industryWords.software;
+  const seed = `${industry}:${tone}:${count}`;
+
+  return uniqueValues(
+    Array.from({ length: count }, (_, index) => {
+      const name = `${pickFrom(left, seed, index)} ${pickFrom(right, seed, index + 17)}`;
+      return `${name}|${slugify(name)}`;
+    })
+  )
+    .slice(0, count)
+    .map((entry) => {
+      const [name, slug] = entry.split("|");
+      return { name, slug, domainHint: `${slug}.com` };
+    });
+}
+
+export function generateProjectNameIdeas({
+  projectType = "app",
+  tone = "practical",
+  count = 8
+} = {}) {
+  const toneWords = {
+    practical: ["Atlas", "Relay", "Harbor", "Ledger", "Canvas", "Beacon"],
+    bold: ["Forge", "Strata", "Vector", "Pulse", "Signal", "Apex"],
+    calm: ["Drift", "Moss", "Cinder", "North", "Quiet", "Hollow"]
+  };
+  const typeWords = {
+    app: ["App", "Desk", "Flow", "Hub", "Kit", "Suite"],
+    library: ["Core", "Lib", "Kit", "Engine", "Module", "Stack"],
+    internal: ["Ops", "Desk", "Panel", "Portal", "Board", "Console"]
+  };
+  const left = toneWords[tone] || toneWords.practical;
+  const right = typeWords[projectType] || typeWords.app;
+  const seed = `${projectType}:${tone}:${count}`;
+
+  return uniqueValues(
+    Array.from({ length: count }, (_, index) => {
+      const name = `${pickFrom(left, seed, index)} ${pickFrom(right, seed, index + 21)}`;
+      return `${name}|${slugify(name)}`;
+    })
+  )
+    .slice(0, count)
+    .map((entry) => {
+      const [name, slug] = entry.split("|");
+      return { name, repo: slug, packageName: slug.replace(/-/g, "_") };
+    });
+}
+
+export function generateFakeProfiles({
+  role = "product",
+  count = 6
+} = {}) {
+  const firstNames = ["Ava", "Maya", "Luca", "Noah", "Iris", "Owen", "Nina", "Jules", "Evan", "Clara"];
+  const lastNames = ["Carter", "Bennett", "Foster", "Morris", "Harper", "Sullivan", "Reed", "Parker", "Lopez", "Nguyen"];
+  const cities = ["Denver", "Austin", "Portland", "Chicago", "Boise", "Seattle", "Raleigh", "Madison"];
+  const roles = {
+    product: ["Product Manager", "UX Researcher", "Product Designer", "Growth Lead"],
+    engineering: ["Frontend Engineer", "Backend Engineer", "DevOps Engineer", "QA Engineer"],
+    sales: ["Account Executive", "Sales Ops Lead", "Customer Success Manager", "Revenue Analyst"],
+    support: ["Support Specialist", "Onboarding Lead", "Implementation Manager", "Community Manager"]
+  };
+  const selectedRoles = roles[role] || roles.product;
+  const seed = `${role}:${count}`;
+
+  return Array.from({ length: count }, (_, index) => {
+    const first = pickFrom(firstNames, seed, index);
+    const last = pickFrom(lastNames, seed, index + 13);
+    const fullName = `${first} ${last}`;
+    const slug = slugify(fullName).replace(/-/g, ".");
+    return {
+      name: fullName,
+      email: `${slug}@example.test`,
+      city: pickFrom(cities, seed, index + 31),
+      role: pickFrom(selectedRoles, seed, index + 47)
+    };
+  });
+}

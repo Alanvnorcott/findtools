@@ -5,7 +5,11 @@ import { CodeField, CodeResultPanel } from "../components/CodeEditor";
 import { ToolShell } from "../components/ToolShell";
 import {
   contrastRatio,
+  generateCompanyNameIdeas,
   generateCommentBlock,
+  generateFakeProfiles,
+  generateProjectNameIdeas,
+  generateUsernameIdeas,
   hexToRgb,
   mixHexColors,
   normalizeHex,
@@ -109,11 +113,47 @@ export function PasswordPhraseGeneratorTool({ tool, ...shellProps }) {
 }
 
 export function UsernameGeneratorTool({ tool, ...shellProps }) {
-  const adjectives = ["quiet", "steady", "bright", "clear", "calm", "sharp"];
-  const nouns = ["atlas", "forge", "harbor", "vector", "studio", "signal"];
-  const [output, setOutput] = useState("");
-  tool.copyValue = () => output;
-  return <ToolShell {...shellProps} tool={tool} instructions="Generate clean username ideas." inputArea={<ActionRow><button className="button" onClick={() => setOutput(`${randomFrom(adjectives)}-${randomFrom(nouns)}-${Math.floor(Math.random() * 900 + 100)}`)} type="button">Generate username</button></ActionRow>} outputArea={<ResultPanel value={output || "Generate a username to see it here."} />} />;
+  const [keyword, setKeyword] = useState("design");
+  const [style, setStyle] = useState("professional");
+  const [count, setCount] = useState("8");
+  const [includeNumbers, setIncludeNumbers] = useState(true);
+  const ideas = useMemo(
+    () => generateUsernameIdeas({ keyword, style, count: Number(count) || 8, includeNumbers }),
+    [count, includeNumbers, keyword, style]
+  );
+  tool.copyValue = () => ideas.join("\n");
+  return (
+    <ToolShell
+      {...shellProps}
+      tool={tool}
+      instructions="Generate practical username ideas from a keyword, style, and count so you can copy handles that are actually usable."
+      inputArea={
+        <>
+          <div className="split-fields">
+            <ToolInput label="Keyword">
+              <input value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+            </ToolInput>
+            <ToolInput label="Style">
+              <select value={style} onChange={(event) => setStyle(event.target.value)}>
+                <option value="professional">Professional</option>
+                <option value="creator">Creator</option>
+                <option value="tech">Tech</option>
+                <option value="short">Short</option>
+              </select>
+            </ToolInput>
+            <ToolInput label="Ideas">
+              <input value={count} onChange={(event) => setCount(event.target.value)} />
+            </ToolInput>
+          </div>
+          <label className="checkbox-row">
+            <input checked={includeNumbers} onChange={(event) => setIncludeNumbers(event.target.checked)} type="checkbox" />
+            Include numeric variations
+          </label>
+        </>
+      }
+      outputArea={<ResultPanel value={ideas.join("\n") || "Adjust the options to see username ideas."} />}
+    />
+  );
 }
 
 export function RandomNumberGeneratorTool({ tool, ...shellProps }) {
@@ -173,28 +213,106 @@ export function GradientGeneratorTool({ tool, ...shellProps }) {
 }
 
 export function FakeNameGeneratorTool({ tool, ...shellProps }) {
-  const first = ["Ava", "Maya", "Luca", "Noah", "Iris", "Owen", "Jules", "Nina"];
-  const last = ["Carter", "Bennett", "Foster", "Morris", "Harper", "Sullivan", "Reed", "Parker"];
-  const cities = ["Denver", "Austin", "Portland", "Chicago", "Boise", "Seattle"];
-  const [profile, setProfile] = useState([]);
-  const generate = () => {
-    const fullName = `${randomFrom(first)} ${randomFrom(last)}`;
-    setProfile([
-      { label: "Name", value: fullName },
-      { label: "Email", value: `${fullName.toLowerCase().replace(/\s+/g, ".")}@example.test` },
-      { label: "City", value: randomFrom(cities) }
-    ]);
-  };
-  tool.copyValue = () => profile.map((item) => `${item.label}: ${item.value}`).join("\n");
-  return <ToolShell {...shellProps} tool={tool} instructions="Generate a simple fake identity from an offline sample dataset." inputArea={<ActionRow><button className="button" onClick={generate} type="button">Generate profile</button></ActionRow>} outputArea={<ResultPanel><KeyValueList items={profile} /></ResultPanel>} />;
+  const [role, setRole] = useState("engineering");
+  const [count, setCount] = useState("4");
+  const profiles = useMemo(() => generateFakeProfiles({ role, count: Number(count) || 4 }), [count, role]);
+  tool.copyValue = () =>
+    profiles.map((item) => `${item.name} | ${item.role} | ${item.email} | ${item.city}`).join("\n");
+  return (
+    <ToolShell
+      {...shellProps}
+      tool={tool}
+      instructions="Generate offline fake profiles with role, city, and email so you can seed demos, mock tables, and forms."
+      inputArea={
+        <div className="split-fields">
+          <ToolInput label="Role cluster">
+            <select value={role} onChange={(event) => setRole(event.target.value)}>
+              <option value="engineering">Engineering</option>
+              <option value="product">Product</option>
+              <option value="sales">Sales</option>
+              <option value="support">Support</option>
+            </select>
+          </ToolInput>
+          <ToolInput label="Profiles">
+            <input value={count} onChange={(event) => setCount(event.target.value)} />
+          </ToolInput>
+        </div>
+      }
+      outputArea={
+        <ResultPanel>
+          <div className="stack-sm">
+            {profiles.map((item) => (
+              <div className="result-card" key={`${item.email}-${item.role}`}>
+                <KeyValueList
+                  items={[
+                    { label: "Name", value: item.name },
+                    { label: "Role", value: item.role },
+                    { label: "Email", value: item.email },
+                    { label: "City", value: item.city }
+                  ]}
+                />
+              </div>
+            ))}
+          </div>
+        </ResultPanel>
+      }
+    />
+  );
 }
 
 export function CompanyNameGeneratorTool({ tool, ...shellProps }) {
-  const left = ["North", "Clear", "Signal", "Field", "Quiet", "Open"];
-  const right = ["Works", "Labs", "Studio", "Systems", "Supply", "Collective"];
-  const [value, setValue] = useState("");
-  tool.copyValue = () => value;
-  return <ToolShell {...shellProps} tool={tool} instructions="Generate simple company name ideas." inputArea={<ActionRow><button className="button" onClick={() => setValue(`${randomFrom(left)} ${randomFrom(right)}`)} type="button">Generate company name</button></ActionRow>} outputArea={<ResultPanel value={value || "Generate a company name to see it here."} />} />;
+  const [industry, setIndustry] = useState("software");
+  const [tone, setTone] = useState("modern");
+  const [count, setCount] = useState("6");
+  const names = useMemo(() => generateCompanyNameIdeas({ industry, tone, count: Number(count) || 6 }), [count, industry, tone]);
+  tool.copyValue = () => names.map((item) => `${item.name} | ${item.slug} | ${item.domainHint}`).join("\n");
+  return (
+    <ToolShell
+      {...shellProps}
+      tool={tool}
+      instructions="Generate company names with reusable slugs and domain hints instead of one-off random words."
+      inputArea={
+        <div className="split-fields">
+          <ToolInput label="Industry">
+            <select value={industry} onChange={(event) => setIndustry(event.target.value)}>
+              <option value="software">Software</option>
+              <option value="finance">Finance</option>
+              <option value="health">Health</option>
+              <option value="retail">Retail</option>
+            </select>
+          </ToolInput>
+          <ToolInput label="Tone">
+            <select value={tone} onChange={(event) => setTone(event.target.value)}>
+              <option value="modern">Modern</option>
+              <option value="clear">Clear</option>
+              <option value="premium">Premium</option>
+              <option value="warm">Warm</option>
+            </select>
+          </ToolInput>
+          <ToolInput label="Ideas">
+            <input value={count} onChange={(event) => setCount(event.target.value)} />
+          </ToolInput>
+        </div>
+      }
+      outputArea={
+        <ResultPanel>
+          <div className="stack-sm">
+            {names.map((item) => (
+              <div className="result-card" key={item.slug}>
+                <KeyValueList
+                  items={[
+                    { label: "Name", value: item.name },
+                    { label: "Slug", value: item.slug },
+                    { label: "Domain hint", value: item.domainHint }
+                  ]}
+                />
+              </div>
+            ))}
+          </div>
+        </ResultPanel>
+      }
+    />
+  );
 }
 
 export function HexColorGeneratorTool({ tool, ...shellProps }) {
@@ -305,12 +423,56 @@ export function RandomTimeGeneratorTool({ tool, ...shellProps }) {
 }
 
 export function ProjectNameGeneratorTool({ tool, ...shellProps }) {
-  const [value, setValue] = useState("");
-  const adjectives = ["Quiet", "North", "Clear", "Solid", "Swift", "Open"];
-  const nouns = ["Signal", "Forge", "Harbor", "Canvas", "Relay", "Atlas"];
-  const generate = () => setValue(`${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`);
-  tool.copyValue = () => value;
-  return <ToolShell {...shellProps} tool={tool} instructions="Generate a short project or codename idea." inputArea={<ActionRow><button className="button" onClick={generate} type="button">Generate project name</button></ActionRow>} outputArea={<ResultPanel value={value || "Generate a project name to see it here."} />} />;
+  const [projectType, setProjectType] = useState("app");
+  const [tone, setTone] = useState("practical");
+  const [count, setCount] = useState("6");
+  const names = useMemo(() => generateProjectNameIdeas({ projectType, tone, count: Number(count) || 6 }), [count, projectType, tone]);
+  tool.copyValue = () => names.map((item) => `${item.name} | ${item.repo} | ${item.packageName}`).join("\n");
+  return (
+    <ToolShell
+      {...shellProps}
+      tool={tool}
+      instructions="Generate project names that also give you a repo slug and package-safe name."
+      inputArea={
+        <div className="split-fields">
+          <ToolInput label="Project type">
+            <select value={projectType} onChange={(event) => setProjectType(event.target.value)}>
+              <option value="app">App</option>
+              <option value="library">Library</option>
+              <option value="internal">Internal tool</option>
+            </select>
+          </ToolInput>
+          <ToolInput label="Tone">
+            <select value={tone} onChange={(event) => setTone(event.target.value)}>
+              <option value="practical">Practical</option>
+              <option value="bold">Bold</option>
+              <option value="calm">Calm</option>
+            </select>
+          </ToolInput>
+          <ToolInput label="Ideas">
+            <input value={count} onChange={(event) => setCount(event.target.value)} />
+          </ToolInput>
+        </div>
+      }
+      outputArea={
+        <ResultPanel>
+          <div className="stack-sm">
+            {names.map((item) => (
+              <div className="result-card" key={item.repo}>
+                <KeyValueList
+                  items={[
+                    { label: "Name", value: item.name },
+                    { label: "Repo slug", value: item.repo },
+                    { label: "Package name", value: item.packageName }
+                  ]}
+                />
+              </div>
+            ))}
+          </div>
+        </ResultPanel>
+      }
+    />
+  );
 }
 
 export function LanguageCommentGeneratorTool({ tool, ...shellProps }) {

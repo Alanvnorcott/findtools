@@ -198,7 +198,25 @@ If a language runtime must be heavier, isolate it behind per-language lazy loadi
 Every runnable IDE language should have:
 - a starter snippet that actually produces output
 - a deterministic runtime test
+- at least one loop/function regression test when the language is marked runnable
 - clear UI copy about whether it uses a worker sandbox or lightweight local runner
+
+Runnable IDE languages must also include safety guards against browser-freezing code:
+- loop/iteration limits
+- recursion or call-depth limits
+- readable stop messages when guards trip
+
+## Low-Value Tool Rule
+
+If a tool feels novelty-only, thin, or low-utility, do not leave it in a weak random-output state.
+
+Revamp it into something more useful by adding:
+- constrained inputs
+- multiple candidate outputs
+- practical derived values like slugs, handles, repo names, package names, or domains
+- copy-ready batches instead of one throwaway result
+
+This matters especially for generators such as usernames, company names, project names, and fake data helpers.
 
 ## SEO System Requirement
 

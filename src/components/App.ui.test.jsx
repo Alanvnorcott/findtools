@@ -73,7 +73,7 @@ describe("App rendering", () => {
     fireEvent.click(screen.getByRole("button", { name: /run code/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/hello, findtools/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/hello, findtools/i).length).toBeGreaterThan(0);
     });
   });
 

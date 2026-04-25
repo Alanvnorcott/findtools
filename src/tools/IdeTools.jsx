@@ -60,7 +60,7 @@ export function OnlineIdeTool({ tool, ...shellProps }) {
         <InlineMessage tone="neutral">
           {languageInfo.runtimeMode === "worker"
             ? "JavaScript runs in a local worker sandbox."
-            : `${languageInfo.label} runs in a lightweight browser interpreter optimized for quick snippets, output, assignments, and simple expressions.`}
+            : `${languageInfo.label} runs in a lightweight local runtime that supports functions, loops, conditions, variables, and console-style output for practical snippets, with built-in safety limits for runaway loops and recursion.`}
         </InlineMessage>
       }
       inputArea={
@@ -115,8 +115,8 @@ export function OnlineIdeTool({ tool, ...shellProps }) {
       extra={
         <p>
           IDE drafts are saved locally per language in your browser storage. The editor remains lazy-loaded, and the
-          non-JavaScript IDEs use lightweight built-in runners so the rest of Findtools does not take a large runtime
-          payload hit just because IDE pages exist on the site.
+          non-JavaScript IDEs use lightweight built-in runtimes with common control-flow support so the rest of
+          Findtools does not take a large runtime payload hit just because IDE pages exist on the site.
         </p>
       }
     />

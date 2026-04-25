@@ -198,6 +198,12 @@ A generator should produce a useful result instantly.
 It should make regeneration easy.
 It should allow copying the result quickly.
 
+If a generator is too weak to justify its page, improve it instead of keeping a novelty-only version.
+Prefer:
+- multiple candidates per run
+- constrained inputs such as tone, role, keyword, or industry
+- secondary utility outputs like slugs, repo names, handles, domains, or package-safe names
+
 Examples:
 - password generator
 - username generator
@@ -244,6 +250,16 @@ Recommended test structure:
   - valid path
   - one important edge case
   - invalid handling if applicable
+
+For runnable IDEs or code-execution tools, the minimum test bar is slightly higher:
+- starter snippet runs
+- one loop/function scenario runs
+- invalid syntax returns a readable error
+
+For runnable IDEs and execution tools, add runtime safety guards so bad code does not freeze the site:
+- loop/iteration limits
+- recursion or call-depth limits
+- readable stop messages for guard-triggered execution halts
 
 Keep tool logic isolated from presentation where possible.
 

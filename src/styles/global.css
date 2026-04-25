@@ -606,6 +606,12 @@ p {
   min-height: auto;
 }
 
+.result-card {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
 .content-list {
   margin: 0;
   padding-left: 1.1rem;

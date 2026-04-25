@@ -15,7 +15,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "py",
-    starter: `name = "Findtools"\nprint("Hello, " + name)`
+    starter: `def greet(name):\n    return "Hello, " + name\n\nfor i in range(3):\n    print(greet("Findtools " + str(i)))`
   },
   php: {
     label: "PHP",
@@ -23,7 +23,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "php",
-    starter: `<?php\n$name = "Findtools";\necho "Hello, " . $name;`
+    starter: `<?php\nfunction greet($name) {\n  return "Hello, " . $name;\n}\n\nfor ($i = 0; $i < 3; $i++) {\n  echo greet("Findtools " . $i);\n}`
   },
   ruby: {
     label: "Ruby",
@@ -31,7 +31,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "rb",
-    starter: `name = "Findtools"\nputs "Hello, " + name`
+    starter: `def greet(name)\n  return "Hello, " + name\nend\n\n3.times do |i|\n  puts greet("Findtools " + i)\nend`
   },
   perl: {
     label: "Perl",
@@ -39,7 +39,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "pl",
-    starter: `my $name = "Findtools";\nprint "Hello, " . $name;`
+    starter: `sub greet {\n  my ($name) = @_;\n  return "Hello, " . $name;\n}\n\nfor my $i (0..2) {\n  print greet("Findtools " . $i);\n}`
   },
   r: {
     label: "R",
@@ -47,7 +47,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "r",
-    starter: `name <- "Findtools"\nprint(paste("Hello,", name))`
+    starter: `greet <- function(name) {\n  return(paste("Hello", name))\n}\n\nfor (i in 1:3) {\n  print(greet(i))\n}`
   },
   lua: {
     label: "Lua",
@@ -55,7 +55,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "lua",
-    starter: `local name = "Findtools"\nprint("Hello, " .. name)`
+    starter: `function greet(name)\n  return "Hello, " .. name\nend\n\nfor i = 1, 3 do\n  print(greet(i))\nend`
   },
   matlab: {
     label: "MATLAB",
@@ -63,7 +63,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "m",
-    starter: `name = "Findtools";\ndisp("Hello, " + name);`
+    starter: `function value = greet(name)\nvalue = "Hello, " + name;\nend\n\nfor i = 1:3\ndisp(greet(i));\nend`
   },
   lisp: {
     label: "Lisp",
@@ -71,7 +71,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "lisp",
-    starter: `(setq name "Findtools")\n(print (concatenate 'string "Hello, " name))`
+    starter: `(defun greet (name) (concatenate string "Hello, " name))\n(dotimes (i 3) (print (greet i)))`
   },
   basic: {
     label: "BASIC",
@@ -79,7 +79,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "bas",
-    starter: `10 LET NAME$ = "Findtools"\n20 PRINT "Hello, " + NAME$`
+    starter: `10 FUNCTION GREET(NAME)\n20 RETURN "Hello, " + NAME\n30 END FUNCTION\n40 FOR I = 1 TO 3\n50 PRINT GREET(I)\n60 NEXT`
   },
   bash: {
     label: "Bash",
@@ -87,7 +87,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "sh",
-    starter: `#!/usr/bin/env bash\nname="Findtools"\necho "Hello, $name"`
+    starter: `#!/usr/bin/env bash\ngreet() {\n  echo "Hello, $1"\n}\n\nfor i in 1 2 3; do\n  greet "$i"\ndone`
   },
   powershell: {
     label: "PowerShell",
@@ -95,7 +95,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "ps1",
-    starter: `$name = "Findtools"\nWrite-Output ("Hello, " + $name)`
+    starter: `function Greet($name) {\n  return "Hello, " + $name\n}\n\nfor ($i = 0; $i -lt 3; $i++) {\n  Write-Output (Greet($i))\n}`
   },
   vbscript: {
     label: "VBScript",
@@ -103,7 +103,7 @@ export const ideLanguageRegistry = {
     supportsRun: true,
     runtimeMode: "light",
     extension: "vbs",
-    starter: `Dim name\nname = "Findtools"\nWScript.Echo "Hello, " & name`
+    starter: `Function Greet(name)\n  Greet = "Hello, " & name\nEnd Function\n\nFor i = 1 To 3\n  WScript.Echo Greet(i)\nNext`
   }
 };
 
